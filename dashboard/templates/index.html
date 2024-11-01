@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Traffic Dashboard</title>
+</head>
+<body>
+    <h1>Real-Time Network Traffic Dashboard</h1>
+    <ul id="traffic-list"></ul>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('traffic', function(packet) {
+            const listItem = document.createElement('li');
+            listItem.textContent = JSON.stringify(packet);
+            document.getElementById('traffic-list').appendChild(listItem);
+        });
+    </script>
+</body>
+</html>

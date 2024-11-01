@@ -1,0 +1,3 @@
+# CORS Policy configuration
+cors:
+  allowed_origins: '*'
