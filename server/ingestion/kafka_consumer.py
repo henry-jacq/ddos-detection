@@ -5,7 +5,7 @@ import threading
 import json
 
 # Load Kafka config
-with open('../configs/kafka_config.yaml') as f:
+with open('../../configs/kafka_config.yaml') as f:
     config = yaml.safe_load(f)
 
 consumer = KafkaConsumer(

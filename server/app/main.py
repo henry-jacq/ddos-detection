@@ -10,6 +10,13 @@ app = Flask(__name__)
 socketio = SocketIO(
     app, cors_allowed_origins=cors_config['cors']['allowed_origins'])
 
+@socketio.on('connect')
+def handle_connect():
+    print("Client connected")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print("Client disconnected")
 
 @app.route('/')
 def index():
