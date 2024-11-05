@@ -5,7 +5,7 @@ import threading
 import json
 
 # Load Kafka config
-with open('../../configs/kafka_config.yaml') as f:
+with open('../configs/kafka_config.yaml') as f:
     config = yaml.safe_load(f)
 
 consumer = KafkaConsumer(
@@ -17,12 +17,16 @@ consumer = KafkaConsumer(
 
 packets = []
 
-
 def consume_packets(socketio):
     for message in consumer:
         packets.append(message.value)
         socketio.emit('traffic', message.value)
 
 
-# Run consumer in background
-threading.Thread(target=consume_packets, args=(socketio,), daemon=True).start()
+def start_consumer():
+    # Run consumer in background
+    threading.Thread(target=consume_packets, args=(socketio,), daemon=True).start()
+    
+
+if __name__ == '__main__':
+    start_consumer()

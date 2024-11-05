@@ -1,23 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Traffic Dashboard</title>
-</head>
-<body>
-    <h1>Real-Time Network Traffic Dashboard</h1>
-    <ul id="traffic-list"></ul>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <script>
-        const socket = io();
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Network Traffic Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
 
-        socket.on('traffic', function(packet) {
-            const listItem = document.createElement('li');
-            listItem.textContent = JSON.stringify(packet);
-            document.getElementById('traffic-list').appendChild(listItem);
-        });
-    </script>
-</body>
+    <body class="bg-gray-100 font-sans leading-normal tracking-normal">
+        <!-- Navbar -->
+        <nav class="bg-blue-800 p-4 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <a href="/" class="text-white font-bold text-xl">DDoS Detection Dashboard</a>
+                <span class="text-gray-600">Live network traffic analysis with ML (XGBoost)</span>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container mx-auto p-6">
+            <h1 class="text-3xl font-bold text-gray-700 mb-4">Real-time Network Traffic</h1>
+
+            <!-- Traffic Details List -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <ul id="traffic-list" class="divide-y divide-gray-200">
+                    <!-- Dynamic network traffic data will appear here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Socket.io and JavaScript for real-time data handling -->
+        <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+
+            socket.on('traffic', function (packet) {
+                const listItem = document.createElement('li');
+                listItem.classList.add("p-4", "hover:bg-gray-50");
+
+                // Parse and display each packet in a readable format
+                const packetInfo = JSON.parse(packet);
+                listItem.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-gray-800">Source IP: ${packetInfo.source_ip}</span>
+                    <span class="text-sm text-gray-600">Time: ${new Date(packetInfo.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="text-sm text-gray-600">Destination IP: ${packetInfo.destination_ip}</div>
+                <div class="text-sm text-gray-600">Packet Size: ${packetInfo.size} bytes</div>
+                <div class="text-sm text-red-600">Threat Level: ${packetInfo.threat_level}</div>
+            `;
+
+                document.getElementById('traffic-list').appendChild(listItem);
+            });
+        </script>
+    </body>
+
 </html>
