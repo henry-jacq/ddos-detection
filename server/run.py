@@ -1,9 +1,10 @@
 # run_server.py
-import subprocess
-from app.main import start_app
+
+from server.app.wsgi import start_app
+from server.consumer import start_consumer
 
 def start_kafka_consumer():
-    subprocess.Popen(['python', 'ingestion/kafka_consumer.py'])
+    start_consumer()
 
 def start_flask_app():
     start_app()
