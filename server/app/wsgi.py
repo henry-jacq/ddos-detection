@@ -25,10 +25,10 @@ def index():
     return render_template("index.html")
 
 # Function to start the app, configurable for development or production
-def start_app(host="0.0.0.0", port=5000, debug=True):
+def start_flask_app(host="0.0.0.0", port=5000, debug=True):
     """Starts the Flask-SocketIO application."""
     socketio.run(app, host=host, port=port, debug=debug)
 
 # Entry point for the application
 if __name__ == "__main__":
-    start_app()
+    start_flask_app()

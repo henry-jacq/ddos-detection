@@ -1,19 +1,20 @@
-from scapy.all import sniff
-from queue import Queue
-import threading
 import json
-import yaml
+import threading
+from queue import Queue
 from kafka import KafkaProducer
+from scapy.all import sniff
+import signal
+import sys
 
-# Load Kafka config
-with open('../configs/kafka_config.yaml') as f:
-    config = yaml.safe_load(f)
+# Load Kafka configuration
+with open('kafka.json', 'r') as f:
+    config = json.load(f)
 
 # Initialize Kafka producer
 producer = KafkaProducer(
     bootstrap_servers=config['kafka']['bootstrap_servers'],
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-    max_in_flight_requests_per_connection=5,  # Allow more concurrent requests
+    max_in_flight_requests_per_connection=config['kafka']['max_in_flight_requests_per_connection'],
 )
 
 # Define protocol map for human-readable format
@@ -21,6 +22,9 @@ protocol_map = {1: 'ICMP', 6: 'TCP', 17: 'UDP'}
 
 # Initialize packet queue
 packet_queue = Queue()
+
+# Flag to control packet processing
+is_running = True
 
 def process_packet(packet):
     try:
@@ -63,19 +67,29 @@ def process_packet(packet):
     except Exception as e:
         print(f"Error processing packet: {e}")
 
-
 def send_packets():
-    while True:
-        packet_data = packet_queue.get()
-        if packet_data is None:  # Exit signal
-            break
+    while is_running or not packet_queue.empty():
         try:
+            packet_data = packet_queue.get(timeout=1)  # Use timeout for graceful exit
             producer.send(config['kafka']['topic'], packet_data)
             print(f"Sent packet: {packet_data}")
             packet_queue.task_done()
         except Exception as e:
             print(f"Error sending packet to Kafka: {e}")
+        except Queue.Empty:
+            pass  # Queue is empty, keep checking
 
+# Graceful shutdown
+def signal_handler(sig, frame):
+    global is_running
+    print("Shutting down gracefully...")
+    is_running = False
+    packet_queue.put(None)  # Signal to terminate `send_packets`
+    producer.flush()  # Ensure all messages are sent
+    sys.exit(0)
+
+# Register signal handler for graceful shutdown
+signal.signal(signal.SIGINT, signal_handler)
 
 # Start a thread for sending packets
 threading.Thread(target=send_packets, daemon=True).start()
@@ -85,4 +99,4 @@ def start_sniffing(interface='enp0s3'):
     sniff(iface=interface, prn=process_packet, store=0)
 
 if __name__ == "__main__":
-    start_sniffing()  # Start sniffing on the specified interface
+    start_sniffing()

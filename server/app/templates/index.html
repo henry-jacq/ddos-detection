@@ -33,25 +33,17 @@
         <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
         <script>
             const socket = io();
-
             socket.on('traffic', function (packet) {
+                console.log("Raw packet data:", packet);  // Log the received packet object
+
+                // Directly use `packet` as it’s already in object form
                 const listItem = document.createElement('li');
                 listItem.classList.add("p-4", "hover:bg-gray-50");
+                listItem.textContent = `Source IP: ${packet.src_ip}, Destination IP: ${packet.dst_ip}, Protocol: ${packet.protocol}, Packet Length: ${packet.packet_length}, Timestamp: ${packet.timestamp}`;
 
-                // Parse and display each packet in a readable format
-                const packetInfo = JSON.parse(packet);
-                listItem.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <span class="font-semibold text-gray-800">Source IP: ${packetInfo.source_ip}</span>
-                    <span class="text-sm text-gray-600">Time: ${new Date(packetInfo.timestamp).toLocaleString()}</span>
-                </div>
-                <div class="text-sm text-gray-600">Destination IP: ${packetInfo.destination_ip}</div>
-                <div class="text-sm text-gray-600">Packet Size: ${packetInfo.size} bytes</div>
-                <div class="text-sm text-red-600">Threat Level: ${packetInfo.threat_level}</div>
-            `;
-
-                document.getElementById('traffic-list').appendChild(listItem);
+                document.getElementById("traffic-list").appendChild(listItem);
             });
+
         </script>
     </body>
 
