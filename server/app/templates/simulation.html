@@ -6,7 +6,7 @@
 <h2 class="text-3xl font-bold text-gray-800 mb-6">Simulate DDoS Attacks</h2>
 
 <!-- Attack Simulation Controls -->
-<div class="flex gap-6 mb-6 text-gray-700">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 text-gray-700">
     <div class="flex items-center space-x-3">
         <span class="font-semibold">Select Attack Type:</span>
         <select id="attackType" class="border rounded-md px-3 py-2">
@@ -16,7 +16,7 @@
         </select>
     </div>
     <div class="flex items-center space-x-3">
-        <span class="font-semibold">Attack Duration (seconds):</span>
+        <span class="font-semibold">Attack Duration (in seconds):</span>
         <input type="number" id="attackDuration" class="border rounded-md px-3 py-2" value="60" min="1" max="300">
     </div>
     <div class="flex items-center space-x-3">
@@ -24,13 +24,26 @@
         <input type="range" id="attackIntensity" class="w-40" value="50" min="1" max="100">
         <span id="attackIntensityValue" class="text-gray-600">50</span>
     </div>
+    <div class="flex items-center space-x-3">
+        <label for="targetSystem" class="font-semibold text-gray-700">Target System:</label>
+        <input type="text" id="targetSystem" class="border border-gray-300 rounded-lg px-4 py-2 text-gray-700"
+            placeholder="e.g., 192.168.1.1">
+    </div>
 </div>
 
-<!-- Start/Stop Attack Simulation Button -->
-<div class="mb-6">
+<!-- Start/Stop/Pause/Resume Simulation Buttons -->
+<div class="mb-6 flex gap-4 justify-start">
     <button id="startAttackButton"
         class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200">
         Start Attack Simulation
+    </button>
+    <button id="pauseAttackButton"
+        class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition duration-200 ml-4 hidden">
+        Pause Attack Simulation
+    </button>
+    <button id="resumeAttackButton"
+        class="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition duration-200 ml-4 hidden">
+        Resume Attack Simulation
     </button>
     <button id="stopAttackButton"
         class="px-6 py-2 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition duration-200 ml-4 hidden">
@@ -38,9 +51,69 @@
     </button>
 </div>
 
+<!-- Progress Bar -->
+<div class="mb-6">
+    <label for="progressBar" class="font-semibold text-gray-700">Simulation Progress:</label>
+    <progress id="progressBar" value="0" max="100" class="w-full h-2 bg-gray-200 rounded-md"></progress>
+</div>
+
+<!-- Simulation Status & Logs -->
+<div id="simulationStatus" class="bg-gray-100 p-4 rounded-lg shadow-md text-gray-800 mb-6">
+    <p><strong>Status:</strong> <span id="attackStatus">Idle</span></p>
+    <p><strong>Started at:</strong> <span id="attackStartTime">N/A</span></p>
+    <ul id="attackLogs" class="space-y-2">
+        <!-- Logs will be dynamically added here -->
+    </ul>
+</div>
+
+<!-- Real-Time Traffic Graph -->
+<div id="trafficChart" class="mb-8">
+    <canvas id="realTimeChart"></canvas>
+</div>
+
+<!-- Simulation Summary -->
+<div id="simulationSummary" class="bg-white p-6 rounded-xl shadow-lg mb-8">
+    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Simulation Summary</h3>
+    <p><strong>Attack Type:</strong> SYN Flood</p>
+    <p><strong>Duration:</strong> 60 seconds</p>
+    <p><strong>Intensity:</strong> 75</p>
+    <p><strong>Packets Sent:</strong> 1,200,000</p>
+    <p><strong>Response Time:</strong> 1.2s</p>
+</div>
+
+<!-- Attack History -->
+<div id="attackHistory" class="bg-white p-6 rounded-xl shadow-lg mb-8">
+    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Attack History</h3>
+    <table class="min-w-full table-auto">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left">Attack Type</th>
+                <th class="px-4 py-2 text-left">Duration</th>
+                <th class="px-4 py-2 text-left">Intensity</th>
+                <th class="px-4 py-2 text-left">Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="px-4 py-2">SYN Flood</td>
+                <td class="px-4 py-2">60s</td>
+                <td class="px-4 py-2">80</td>
+                <td class="px-4 py-2">Success</td>
+            </tr>
+            <tr>
+                <td class="px-4 py-2">UDP Flood</td>
+                <td class="px-4 py-2">120s</td>
+                <td class="px-4 py-2">60</td>
+                <td class="px-4 py-2">Success</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 {% endblock %}
 
 {% block script_area %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Update the attack intensity value
     const attackIntensitySlider = document.getElementById('attackIntensity');
@@ -49,11 +122,112 @@
         attackIntensityValue.textContent = attackIntensitySlider.value;
     });
 
-    // Simulate start/stop attack buttons functionality
+    // Simulate start/stop/pause/resume attack buttons functionality
     const startAttackButton = document.getElementById('startAttackButton');
     const stopAttackButton = document.getElementById('stopAttackButton');
+    const pauseAttackButton = document.getElementById('pauseAttackButton');
+    const resumeAttackButton = document.getElementById('resumeAttackButton');
     const attackTypeSelect = document.getElementById('attackType');
     const attackDurationInput = document.getElementById('attackDuration');
+    const targetSystemInput = document.getElementById('targetSystem');
+    const progressBar = document.getElementById('progressBar');
 
+    let attackStatus = 'Idle';
+    let attackStartTime = null;
+    let progress = 0;
+    let simulationInterval = null;
+
+    // Start attack button event
+    startAttackButton.addEventListener('click', function () {
+        attackStatus = 'Running';
+        attackStartTime = new Date().toLocaleString();
+        document.getElementById('attackStatus').textContent = attackStatus;
+        document.getElementById('attackStartTime').textContent = attackStartTime;
+        document.getElementById('attackLogs').innerHTML += `<li>Attack started at ${attackStartTime}</li>`;
+        stopAttackButton.classList.remove('hidden');
+        pauseAttackButton.classList.remove('hidden');
+        startAttackButton.disabled = true;
+
+        // Start progress bar update
+        progressBar.value = 0;
+        progress = 0;
+        simulationInterval = setInterval(function () {
+            if (progress < 100) {
+                progress += 2; // Increment progress bar by 2%
+                progressBar.value = progress;
+            } else {
+                clearInterval(simulationInterval); // Stop simulation after 100% progress
+                attackStatus = 'Finished';
+                document.getElementById('attackStatus').textContent = attackStatus;
+                document.getElementById('attackLogs').innerHTML += `<li>Attack finished.</li>`;
+                startAttackButton.disabled = false;
+            }
+        }, (attackDurationInput.value * 10) / 100); // Adjust interval speed
+    });
+
+    // Stop attack button event
+    stopAttackButton.addEventListener('click', function () {
+        attackStatus = 'Stopped';
+        document.getElementById('attackStatus').textContent = attackStatus;
+        document.getElementById('attackLogs').innerHTML += `<li>Attack stopped.</li>`;
+        stopAttackButton.classList.add('hidden');
+        startAttackButton.disabled = false;
+        clearInterval(simulationInterval); // Stop progress bar update
+    });
+
+    // Pause attack button event
+    pauseAttackButton.addEventListener('click', function () {
+        attackStatus = 'Paused';
+        document.getElementById('attackStatus').textContent = attackStatus;
+        document.getElementById('attackLogs').innerHTML += `<li>Attack paused.</li>`;
+        pauseAttackButton.classList.add('hidden');
+        resumeAttackButton.classList.remove('hidden');
+        clearInterval(simulationInterval); // Pause progress bar update
+    });
+
+    // Resume attack button event
+    resumeAttackButton.addEventListener('click', function () {
+        attackStatus = 'Running';
+        document.getElementById('attackStatus').textContent = attackStatus;
+        document.getElementById('attackLogs').innerHTML += `<li>Attack resumed.</li>`;
+        resumeAttackButton.classList.add('hidden');
+        pauseAttackButton.classList.remove('hidden');
+
+        // Resume progress bar update
+        simulationInterval = setInterval(function () {
+            if (progress < 100) {
+                progress += 2; // Increment progress bar by 2%
+                progressBar.value = progress;
+            } else {
+                clearInterval(simulationInterval); // Stop simulation after 100% progress
+                attackStatus = 'Finished';
+                document.getElementById('attackStatus').textContent = attackStatus;
+                document.getElementById('attackLogs').innerHTML += `<li>Attack finished.</li>`;
+            }
+        }, (attackDurationInput.value * 10) / 100); // Adjust interval speed
+    });
+
+    // Initialize traffic chart
+    const ctx = document.getElementById('realTimeChart').getContext('2d');
+    const trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Traffic Volume (Mbps)',
+                data: [],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { type: 'linear', position: 'bottom' }
+            }
+        }
+    });
 </script>
 {% endblock %}
