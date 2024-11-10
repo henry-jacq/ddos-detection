@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content_area %}
+<h2 class="text-3xl font-bold text-gray-800 mb-6">Settings</h2>
+
+<!-- Network Settings Section -->
+<div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Network Settings</h3>
+    <div class="space-y-4">
+        <div class="flex items-center space-x-4">
+            <label for="networkInterface" class="text-gray-700 font-medium">Network Interface:</label>
+            <select id="networkInterface" class="border rounded-md px-3 py-2">
+                <option value="eth0">eth0</option>
+                <option value="wlan0">wlan0</option>
+                <option value="lo">lo</option>
+            </select>
+        </div>
+        <div class="flex items-center space-x-4">
+            <label for="monitoringInterval" class="text-gray-700 font-medium">Monitoring Interval (seconds):</label>
+            <input type="number" id="monitoringInterval" class="border rounded-md px-3 py-2" value="5" min="1" max="60">
+        </div>
+    </div>
+</div>
+
+<!-- Alert Settings Section -->
+<div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Alert Settings</h3>
+    <div class="space-y-4">
+        <div class="flex items-center space-x-4">
+            <label for="enableAlerts" class="text-gray-700 font-medium">Enable Alerts:</label>
+            <input type="checkbox" id="enableAlerts" class="text-blue-600 rounded">
+        </div>
+        <div class="flex items-center space-x-4">
+            <label for="alertThreshold" class="text-gray-700 font-medium">Alert Threshold (Mbps):</label>
+            <input type="number" id="alertThreshold" class="border rounded-md px-3 py-2" value="100" min="1" max="1000">
+        </div>
+    </div>
+</div>
+
+<!-- Logging Settings Section -->
+<div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Logging Settings</h3>
+    <div class="space-y-4">
+        <div class="flex items-center space-x-4">
+            <label for="logLevel" class="text-gray-700 font-medium">Log Level:</label>
+            <select id="logLevel" class="border rounded-md px-3 py-2">
+                <option value="info">Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+                <option value="debug">Debug</option>
+            </select>
+        </div>
+        <div class="flex items-center space-x-4">
+            <label for="logToFile" class="text-gray-700 font-medium">Log to File:</label>
+            <input type="checkbox" id="logToFile" class="text-blue-600 rounded">
+        </div>
+    </div>
+</div>
+
+<!-- Save Settings Button -->
+<div class="flex justify-end">
+    <button id="saveSettingsButton"
+        class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-200">
+        Save Settings
+    </button>
+</div>
+
+{% endblock %}
+
+{% block script_area %}
+<script>
+    // Save Settings button functionality
+    const saveSettingsButton = document.getElementById('saveSettingsButton');
+
+    saveSettingsButton.addEventListener('click', function () {
+        const networkInterface = document.getElementById('networkInterface').value;
+        const monitoringInterval = document.getElementById('monitoringInterval').value;
+        const enableAlerts = document.getElementById('enableAlerts').checked;
+        const alertThreshold = document.getElementById('alertThreshold').value;
+        const logLevel = document.getElementById('logLevel').value;
+        const logToFile = document.getElementById('logToFile').checked;
+
+        console.log("Saving settings...");
+        console.log(`Network Interface: ${networkInterface}`);
+        console.log(`Monitoring Interval: ${monitoringInterval} seconds`);
+        console.log(`Enable Alerts: ${enableAlerts}`);
+        console.log(`Alert Threshold: ${alertThreshold} Mbps`);
+        console.log(`Log Level: ${logLevel}`);
+        console.log(`Log to File: ${logToFile}`);
+
+        // Logic for saving settings goes here (e.g., send settings to backend API)
+
+        alert("Settings saved successfully!");
+    });
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 import os
 
@@ -23,9 +23,21 @@ def handle_disconnect():
     print("Client disconnected")
 
 # Default route
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.route("/u/dashboard")
+def dashboard():
+    return render_template("index.html", request=request)
+
+@app.route("/u/analytics")
+def network_analytics():
+    return render_template("analytics.html", request=request)
+
+@app.route("/u/simulation")
+def simulate_attacks():
+    return render_template("simulation.html", request=request)
+
+@app.route("/u/settings")
+def settings():
+    return render_template("settings.html", request=request)
 
 # Function to start the app, configurable for development or production
 def start_flask_app(host="0.0.0.0", port=5000, debug=True, db=None):

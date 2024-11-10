@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Simulate Attacks{% endblock %}
+
+{% block content_area %}
+<h2 class="text-3xl font-bold text-gray-800 mb-6">Simulate DDoS Attacks</h2>
+
+<!-- Attack Simulation Controls -->
+<div class="flex gap-6 mb-6 text-gray-700">
+    <div class="flex items-center space-x-3">
+        <span class="font-semibold">Select Attack Type:</span>
+        <select id="attackType" class="border rounded-md px-3 py-2">
+            <option value="SYN_Flood">SYN Flood</option>
+            <option value="UDP_Flood">UDP Flood</option>
+            <option value="HTTP_Flood">HTTP Flood</option>
+        </select>
+    </div>
+    <div class="flex items-center space-x-3">
+        <span class="font-semibold">Attack Duration (seconds):</span>
+        <input type="number" id="attackDuration" class="border rounded-md px-3 py-2" value="60" min="1" max="300">
+    </div>
+    <div class="flex items-center space-x-3">
+        <span class="font-semibold">Attack Intensity:</span>
+        <input type="range" id="attackIntensity" class="w-40" value="50" min="1" max="100">
+        <span id="attackIntensityValue" class="text-gray-600">50</span>
+    </div>
+</div>
+
+<!-- Start/Stop Attack Simulation Button -->
+<div class="mb-6">
+    <button id="startAttackButton"
+        class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200">
+        Start Attack Simulation
+    </button>
+    <button id="stopAttackButton"
+        class="px-6 py-2 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition duration-200 ml-4 hidden">
+        Stop Attack Simulation
+    </button>
+</div>
+
+<!-- Traffic Details List -->
+<div id="traffic-list" class="space-y-4 overflow-y-auto h-96 pr-4 text-gray-700">
+    <div class="bg-gray-200 p-3 rounded-lg shadow-sm text-sm">
+        <strong>Timestamp:</strong> 11/10/2024, 5:06:37 PM<br>
+        <strong>Source IP:</strong> 110.224.95.87<br>
+        <strong>Destination IP:</strong> 103.14.121.164<br>
+        <strong>Protocol:</strong> TCP<br>
+        <strong>Packet length:</strong> 178 bytes
+    </div>
+    <div class="bg-gray-200 p-3 rounded-lg shadow-sm text-sm">
+        <strong>Timestamp:</strong> 11/10/2024, 5:07:10 PM<br>
+        <strong>Source IP:</strong> 192.168.0.2<br>
+        <strong>Destination IP:</strong> 103.14.121.164<br>
+        <strong>Protocol:</strong> UDP<br>
+        <strong>Packet length:</strong> 512 bytes
+    </div>
+    <!-- More traffic entries will be appended dynamically here -->
+</div>
+
+{% endblock %}
+
+{% block script_area %}
+<script>
+    // Update the attack intensity value
+    const attackIntensitySlider = document.getElementById('attackIntensity');
+    const attackIntensityValue = document.getElementById('attackIntensityValue');
+    attackIntensitySlider.addEventListener('input', function () {
+        attackIntensityValue.textContent = attackIntensitySlider.value;
+    });
+
+    // Simulate start/stop attack buttons functionality
+    const startAttackButton = document.getElementById('startAttackButton');
+    const stopAttackButton = document.getElementById('stopAttackButton');
+    const attackTypeSelect = document.getElementById('attackType');
+    const attackDurationInput = document.getElementById('attackDuration');
+
+    startAttackButton.addEventListener('click', function () {
+        const attackType = attackTypeSelect.value;
+        const attackDuration = attackDurationInput.value;
+        const attackIntensity = attackIntensitySlider.value;
+
+        console.log(`Starting ${attackType} for ${attackDuration} seconds with intensity ${attackIntensity}`);
+
+        // Start the attack simulation logic here (e.g., send attack packets)
+
+        startAttackButton.classList.add('hidden');
+        stopAttackButton.classList.remove('hidden');
+    });
+
+    stopAttackButton.addEventListener('click', function () {
+        console.log("Stopping attack simulation");
+
+        // Stop the attack simulation logic here (e.g., stop sending attack packets)
+
+        startAttackButton.classList.remove('hidden');
+        stopAttackButton.classList.add('hidden');
+    });
+
+    // Optional: Append simulated attack data to the traffic list
+    function appendTrafficData() {
+        const trafficList = document.getElementById('traffic-list');
+        const newTrafficEntry = document.createElement('div');
+        newTrafficEntry.classList.add('bg-gray-200', 'p-3', 'rounded-lg', 'shadow-sm', 'text-sm');
+        newTrafficEntry.innerHTML = `
+            <strong>Timestamp:</strong> ${new Date().toLocaleString()}<br>
+            <strong>Source IP:</strong> 192.168.0.3<br>
+            <strong>Destination IP:</strong> 103.14.121.164<br>
+            <strong>Protocol:</strong> TCP<br>
+            <strong>Packet length:</strong> 256 bytes
+        `;
+        trafficList.appendChild(newTrafficEntry);
+    }
+
+    // Example: Simulate attack data updates every 3 seconds
+    setInterval(appendTrafficData, 3000);
+</script>
+{% endblock %}
