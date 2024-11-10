@@ -97,13 +97,17 @@
                 </div>
             </div>
         </div>
-        {% block script_area %}{% endblock %}
         <script>
+            const sidebar = document.getElementById('sidebar');
+            document.getElementById('openSidebar').addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
+            document.getElementById('closeSidebar').addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+
             document.getElementById('userMenuButton').addEventListener('click', function () {
                 const userMenu = document.getElementById('userMenu');
                 userMenu.classList.toggle('hidden');
             });
         </script>
+        {% block script_area %}{% endblock %}
     </body>
 
 </html>
