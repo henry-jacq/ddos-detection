@@ -35,27 +35,27 @@
                     <h2 class="text-xl font-semibold">DDoS Dashboard</h2>
                 </div>
                 <nav class="flex-1 p-4 space-y-2">
-                    <ul>
+                    <ul class="flex flex-col gap-1">
                         <li>
-                            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-200 transition-colors">
+                            <a href="{{ url_for('dashboard') }}" class="flex items-center p-3 rounded-lg {{ 'bg-gray-200' if request.endpoint == 'dashboard' else 'hover:bg-gray-200' }} transition-colors">
                                 <i class="fas fa-network-wired mr-3"></i>
                                 <span>Network Traffic Analysis</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-200 transition-colors">
+                            <a href="{{ url_for('network_analytics') }}" class="flex items-center p-3 rounded-lg {{ 'bg-gray-200' if request.endpoint == 'network_analytics' else 'hover:bg-gray-200' }} transition-colors">
                                 <i class="fas fa-chart-line mr-3"></i>
                                 <span>Network Analytics</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-200 transition-colors">
+                            <a href="{{ url_for('simulate_attacks') }}" class="flex items-center p-3 rounded-lg {{ 'bg-gray-200' if request.endpoint == 'simulate_attacks' else 'hover:bg-gray-200' }} transition-colors">
                                 <i class="fas fa-bolt mr-3"></i>
                                 <span>Simulate Attacks</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-200 transition-colors">
+                            <a href="{{ url_for('settings') }}" class="flex items-center p-3 rounded-lg {{ 'bg-gray-200' if request.endpoint == 'settings' else 'hover:bg-gray-200' }} transition-colors">
                                 <i class="fas fa-cogs mr-3"></i>
                                 <span>Agent Settings</span>
                             </a>
@@ -136,7 +136,7 @@
                                 <i class="fas fa-play"></i><span>Start Capturing</span>
                             </button>
                             <button id="clearLogsButton"
-                                class="text-sm border rounded-lg px-3 py-1 bg-gray-300 text-gray-800 flex items-center space-x-2 hidden">
+                                class="text-sm border rounded-lg px-3 py-1 bg-gray-300 text-gray-800 flex items-center space-x-2 disabled:bg-gray-500 disabled:text-gray-400 disabled:cursor-not-allowed" disabled="true">
                                 <i class="fas fa-trash"></i><span>Clear Logs</span>
                             </button>
                         </div>
@@ -186,15 +186,18 @@
             clearLogsButton.addEventListener('click', () => {
                 trafficList.innerHTML = '';
                 trafficList.appendChild(startCaptureMessage);
-                clearLogsButton.classList.add('hidden');
+                clearLogsButton.disabled = !clearLogsButton.disabled;
             });
 
             function toggleCapture() {
                 if (capturing) {
                     socket = io();
                     captureButton.classList.replace('bg-green-600', 'bg-red-600');
+                    captureButton.querySelector('i').classList.remove('fa-play');
+                    captureButton.querySelector('i').classList.add('fa-stop');
                     captureButton.querySelector('span').textContent = 'Stop Capturing';
-                    clearLogsButton.classList.remove('hidden');
+                    clearLogsButton.disabled = !clearLogsButton.disabled;
+
 
                     socket.on('traffic', (data) => {
                         displayTrafficData(data);
@@ -202,23 +205,27 @@
 
                 } else {
                     captureButton.classList.replace('bg-red-600', 'bg-green-600');
+                    captureButton.querySelector('i').classList.remove('fa-stop');
+                    captureButton.querySelector('i').classList.add('fa-play');
                     captureButton.querySelector('span').textContent = 'Start Capturing';
                     socket.disconnect();
                     socket = null;
                 }
             }
 
-            function displayTrafficData(data) {
+            function displayTrafficData(packet) {
                 startCaptureMessage.remove();
 
                 const trafficItem = document.createElement('div');
                 trafficItem.className = 'bg-gray-200 p-2 rounded-lg shadow-sm text-sm';
                 trafficItem.innerHTML = `
-                <strong>Time:</strong> ${new Date(data.timestamp).toLocaleTimeString()} |
-                <strong>IP:</strong> ${data.ip} |
-                <strong>Protocol:</strong> ${data.protocol} |
-                <strong>Bytes:</strong> ${data.bytes}
+                <strong>Timestamp:</strong> ${new Date(packet.timestamp).toLocaleTimeString()}<br>
+                <strong>Source IP:</strong> ${packet.source_ip}<br>
+                <strong>Destination IP:</strong> ${packet.destination_ip}<br>
+                <strong>Protocol:</strong> ${packet.protocol}<br>
+                <strong>Size:</strong> ${packet.size} bytes
             `;
+
 
                 if (prependMode) {
                     trafficList.insertBefore(trafficItem, trafficList.firstChild);
