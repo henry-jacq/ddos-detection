@@ -4,6 +4,9 @@
       "topic": "network_traffic",
       "auto_offset_reset": "earliest",
       "max_in_flight_requests_per_connection": 5
+    },
+    "network": {
+      "interface": "eth0",
+      "interval": 1
     }
 }
-  
