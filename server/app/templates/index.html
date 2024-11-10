@@ -147,9 +147,10 @@
                     </div>
 
                     <!-- Traffic Details List -->
-                    <div id="traffic-list" class="space-y-2 overflow-y-scroll h-96 pr-4 text-gray-700">
-                        <div id="start-capture-message" class="text-center text-gray-500">Click "Start Capturing" to
-                            view traffic logs</div>
+                    <div id="traffic-list" class="space-y-2 overflow-y-auto h-96 pr-4 text-gray-700">
+                        <div id="start-capture-message" class="text-center text-gray-500">
+                            Click "Start Capturing" to view traffic logs
+                        </div>
                     </div>
                 </div>
             </div>
@@ -177,12 +178,6 @@
                 toggleCapture();
             });
 
-            toggleOrderButton.addEventListener('click', () => {
-                prependMode = !prependMode;
-                toggleOrderButton.innerHTML = `<i class="fas fa-sort"></i><span> Order: ${prependMode ? 'Recent' : 'Oldest'}</span>`;
-                sortTrafficList();
-            });
-
             clearLogsButton.addEventListener('click', () => {
                 trafficList.innerHTML = '';
                 trafficList.appendChild(startCaptureMessage);
@@ -190,16 +185,18 @@
             });
 
             function toggleCapture() {
+                if (trafficList.children.length > 1 && !capturing) {
+                    clearLogsButton.disabled = !clearLogsButton.disabled;
+                }
                 if (capturing) {
                     socket = io();
                     captureButton.classList.replace('bg-green-600', 'bg-red-600');
                     captureButton.querySelector('i').classList.remove('fa-play');
                     captureButton.querySelector('i').classList.add('fa-stop');
                     captureButton.querySelector('span').textContent = 'Stop Capturing';
-                    clearLogsButton.disabled = !clearLogsButton.disabled;
-
-
+                    
                     socket.on('traffic', (data) => {
+                        startCaptureMessage.remove();
                         displayTrafficData(data);
                     });
 
@@ -213,17 +210,15 @@
                 }
             }
 
-            function displayTrafficData(packet) {
-                startCaptureMessage.remove();
-
+            function displayTrafficData(data) {
                 const trafficItem = document.createElement('div');
                 trafficItem.className = 'bg-gray-200 p-2 rounded-lg shadow-sm text-sm';
                 trafficItem.innerHTML = `
-                <strong>Timestamp:</strong> ${new Date(packet.timestamp).toLocaleTimeString()}<br>
-                <strong>Source IP:</strong> ${packet.source_ip}<br>
-                <strong>Destination IP:</strong> ${packet.destination_ip}<br>
-                <strong>Protocol:</strong> ${packet.protocol}<br>
-                <strong>Size:</strong> ${packet.size} bytes
+                <strong>Timestamp:</strong> ${new Date(data.timestamp * 1000).toLocaleString()}<br>
+                <strong>Source IP:</strong> ${data.src_ip}<br>
+                <strong>Destination IP:</strong> ${data.dst_ip}<br>
+                <strong>Protocol:</strong> ${data.protocol}<br>
+                <strong>Packet length:</strong> ${data.packet_length} bytes
             `;
 
 
@@ -232,11 +227,6 @@
                 } else {
                     trafficList.appendChild(trafficItem);
                 }
-            }
-
-            function sortTrafficList() {
-                const items = Array.from(trafficList.children);
-                items.reverse().forEach(item => trafficList.appendChild(item));
             }
         </script>
     </body>
