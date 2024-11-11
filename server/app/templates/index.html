@@ -3,37 +3,170 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content_area %}
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Real-time Network Traffic</h2>
-    <div class="flex items-center space-x-6 mb-6 text-gray-700">
-        <div class="flex items-center space-x-2"><span class="font-semibold">Threat Level:</span><span id="threat-level"
-                class="text-green-500 font-semibold">Safe</span></div>
-        <div class="flex items-center space-x-2"><span class="font-semibold">Bandwidth:</span><span id="bandwidth">100
-                Mbps</span></div>
-        <div class="flex items-center space-x-2"><span class="font-semibold">Avg Connection
-                Rate:</span><span id="avg-connection-rate">500 conn/s</span></div>
-    </div>
-    <div class="flex items-center justify-between mb-6 text-gray-700">
-        <div class="flex gap-3">
-            <button id="captureButton"
-                class="text-sm border rounded-lg px-3 py-1 bg-green-600 text-white flex items-center space-x-2"><i
-                    class="fas fa-play"></i><span>Start Capturing</span></button>
-        </div>
-    </div>
+<h2 class="text-3xl font-bold text-gray-900 mb-6">Real-time Network Traffic</h2>
 
-    <!-- Traffic Details List -->
-    <div id="traffic-list" class="space-y-2 overflow-y-auto h-96 pr-4 text-gray-700">
-        <div class="bg-gray-200 p-2 rounded-lg shadow-sm text-sm">
-            <strong>Timestamp:</strong> 11/10/2024, 5:06:37 PM<br>
-            <strong>Source IP:</strong> 110.224.95.87<br>
-            <strong>Destination IP:</strong> 103.14.121.164<br>
-            <strong>Protocol:</strong> TCP<br>
-            <strong>Packet length:</strong> 178 bytes
+<!-- Stats Section -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
+        <div>
+            <p class="text-sm text-gray-500">Threat Level</p>
+            <h3 id="threat-level" class="text-2xl font-semibold text-green-500">Safe</h3>
         </div>
     </div>
+    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
+        <div>
+            <p class="text-sm text-gray-500">Bandwidth</p>
+            <h3 id="bandwidth" class="text-2xl font-semibold">100 Mbps</h3>
+        </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
+        <div>
+            <p class="text-sm text-gray-500">Avg Connection Rate</p>
+            <h3 id="avg-connection-rate" class="text-2xl font-semibold">500 conn/s</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Update and Packet Delay Controls -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
+        <div>
+            <label for="updateDelayInput" class="text-sm text-gray-500">Update Delay (ms)</label>
+            <input type="number" id="updateDelayInput" value="1000" min="100"
+                class="w-full md:w-28 border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
+        <div>
+            <label for="packetDelayInput" class="text-sm text-gray-500">Packet Delay (ms)</label>
+            <input type="number" id="packetDelayInput" value="100" min="50"
+                class="w-full md:w-28 border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex justify-between items-center mb-8">
+    <div class="flex space-x-3">
+        <button id="captureButton"
+            class="text-sm border rounded-lg px-6 py-3 bg-green-600 text-white hover:bg-green-700 focus:ring-2 focus:ring-green-300 transition-all flex items-center space-x-2">
+            <i class="fas fa-play"></i><span>Start Capturing</span>
+        </button>
+        <button id="clearLogsButton"
+            class="text-sm border rounded-lg px-6 py-3 bg-gray-500 text-white hover:bg-gray-600 focus:ring-2 focus:ring-gray-300 transition-all disabled:opacity-50"
+            disabled>
+            Clear Logs
+        </button>
+    </div>
+</div>
+
+<!-- Traffic Details List -->
+<div class="bg-white rounded-lg shadow-lg p-6">
+    <h3 class="text-xl font-semibold mb-4">Traffic Monitor</h3>
+    <div id="traffic-list" class="space-y-4 overflow-y-auto h-96 pr-4 rounded-lg text-gray-700">
+        <div id="start-capture-message"
+            class="text-center text-gray-500 bg-gray-50 p-12 rounded-lg m-auto h-full flex items-center justify-center">
+            No data to display. Start capturing traffic.
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block script_area %}
-    <script>
-        console.log("From dashboard!")
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
+<script>
+    let socket = null;
+    let capturing = false;
+    let updateDelay = 1000; // Default update delay (ms)
+    let packetDelay = 100; // Default delay between packets (ms)
+    let trafficQueue = []; // Queue to store emitted traffic packets
+    let currentPacketIndex = 0; // Track current packet to be displayed
+
+    const trafficList = document.getElementById('traffic-list');
+    const startCaptureMessage = document.getElementById('start-capture-message');
+    const captureButton = document.getElementById('captureButton');
+    const clearLogsButton = document.getElementById('clearLogsButton');
+    const updateDelayInput = document.getElementById('updateDelayInput');
+    const packetDelayInput = document.getElementById('packetDelayInput');
+
+    // Listen to change in update delay input
+    updateDelayInput.addEventListener('input', () => {
+        updateDelay = parseInt(updateDelayInput.value) || 1000; // Ensure it's a valid number
+    });
+
+    // Listen to change in packet delay input
+    packetDelayInput.addEventListener('input', () => {
+        packetDelay = parseInt(packetDelayInput.value) || 100; // Ensure it's a valid number
+    });
+
+    captureButton.addEventListener('click', () => {
+        capturing = !capturing;
+        toggleCapture();
+    });
+
+    clearLogsButton.addEventListener('click', () => {
+        trafficList.innerHTML = '';
+        trafficList.appendChild(startCaptureMessage);
+        trafficQueue = []; // Reset the traffic data
+        currentPacketIndex = 0;
+        clearLogsButton.disabled = true; // Disable the button again after clearing
+    });
+
+    function toggleCapture() {
+        if (capturing) {
+            socket = io();
+            captureButton.classList.replace('bg-green-600', 'bg-red-600');
+            captureButton.querySelector('i').classList.remove('fa-play');
+            captureButton.querySelector('i').classList.add('fa-stop');
+            captureButton.querySelector('span').textContent = 'Stop Capturing';
+
+            socket.on('network_traffic', (data) => {
+                startCaptureMessage.remove();
+                // Add data to the queue
+                trafficQueue.unshift(data); // Prepend data to the queue
+                processTrafficQueue(); // Process the queue with delay
+            });
+        } else {
+            captureButton.classList.replace('bg-red-600', 'bg-green-600');
+            captureButton.querySelector('i').classList.remove('fa-stop');
+            captureButton.querySelector('i').classList.add('fa-play');
+            captureButton.querySelector('span').textContent = 'Start Capturing';
+            socket.disconnect();
+            socket = null;
+
+            // Enable "Clear Logs" button after stopping capture if there is data
+            if (trafficQueue.length > 0) {
+                clearLogsButton.disabled = false;
+            }
+        }
+    }
+
+    function processTrafficQueue() {
+        if (currentPacketIndex < trafficQueue.length) {
+            // Delay the update of traffic data based on the update delay
+            setTimeout(() => {
+                displayTrafficData(trafficQueue[currentPacketIndex]);
+                currentPacketIndex++;
+                processTrafficQueue(); // Continue processing the queue with delay
+            }, updateDelay);
+        }
+    }
+
+    function displayTrafficData(data) {
+        const trafficItem = document.createElement('div');
+        trafficItem.className = 'bg-gray-100 p-4 rounded-lg shadow-sm text-sm border border-gray-200';
+        trafficItem.innerHTML = ` 
+            <strong>Timestamp:</strong> ${new Date(data.timestamp * 1000).toLocaleString()}<br>
+            <strong>Source IP:</strong> ${data.src_ip}<br>
+            <strong>Destination IP:</strong> ${data.dst_ip}<br>
+            <strong>Protocol:</strong> ${data.protocol}<br>
+            <strong>Packet length:</strong> ${data.packet_length} bytes
+        `;
+        trafficList.insertBefore(trafficItem, trafficList.firstChild);
+
+        // Delay the display of the next packet based on the packet delay
+        setTimeout(() => { }, packetDelay);
+    }
+</script>
 {% endblock %}
