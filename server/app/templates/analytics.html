@@ -1,103 +1,286 @@
 {% extends "base.html" %}
 
-{% block title %}Network Analytisc{% endblock %}
+{% block title %}Network Analytics{% endblock %}
 
 {% block content_area %}
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Network Analytics</h2>
-    
-    <!-- Additional Metrics -->
-    <div class="flex items-center space-x-6 mb-6 text-gray-700">
-        <div class="flex items-center space-x-2">
-            <span class="font-semibold">Threat Level:</span>
-            <span id="threat-level" class="text-green-500 font-semibold">Safe</span>
+<h2 class="text-3xl font-bold text-gray-800 mb-6">Real-time Network Analytics</h2>
+
+<!-- Metrics Overview Section -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-lg shadow-md text-center">
+        <p class="font-semibold text-gray-600">Client Machine</p>
+        <p id="client-ip" class="text-gray-900 font-bold">204.241.236.21</p>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md text-center">
+        <p class="font-semibold text-gray-600">Threat Status</p>
+        <p id="threat-status" class="text-green-500 font-bold">Safe</p>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md text-center">
+        <p class="font-semibold text-gray-600">Bandwidth Usage</p>
+        <p id="bandwidth" class="text-gray-900 font-bold">100 Mbps</p>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md text-center">
+        <p class="font-semibold text-gray-600">Average Packet Flow</p>
+        <p id="avg-packet-flow" class="text-gray-900 font-bold">500 pkts/s</p>
+    </div>
+</div>
+
+<!-- Client Machine Status Panels -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Client Machine Performance</h3>
+        <p>CPU Usage: <span id="cpu-usage" class="font-bold">45%</span></p>
+        <p>RAM Usage: <span id="ram-usage" class="font-bold">3.2 GB</span></p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Memory & Storage</h3>
+        <p>Swap Usage: <span id="swap-usage" class="font-bold">1.5 GB</span></p>
+        <p>Disk Usage: <span id="disk-usage" class="font-bold">60%</span></p>
+    </div>
+</div>
+
+<!-- Real-Time Packet Analysis -->
+<div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+    <h3 class="text-lg font-semibold mb-4">Real-Time Packet Analysis</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-indigo-50 rounded-lg text-center shadow-inner">
+            <p class="text-sm text-gray-600">Current Status</p>
+            <p id="attack-status" class="text-2xl font-semibold text-red-500">Under Attack</p>
+            <p id="attack-type" class="text-sm text-gray-500">Attack Type: SYN Flood</p>
         </div>
-        <div class="flex items-center space-x-2">
-            <span class="font-semibold">Bandwidth:</span>
-            <span id="bandwidth">100 Mbps</span>
+        <div class="p-4 bg-indigo-50 rounded-lg text-center shadow-inner">
+            <p class="text-sm text-gray-600">Packets Analyzed</p>
+            <p id="packet-count" class="text-2xl font-semibold text-gray-800">2,340</p>
         </div>
-        <div class="flex items-center space-x-2">
-            <span class="font-semibold">Avg Connection Rate:</span>
-            <span id="avg-connection-rate">500 conn/s</span>
-        </div>
-        <div class="flex items-center space-x-2">
-            <span class="font-semibold">Capturing from:</span>
-            <strong id="dstIpDisplay">-</strong>
+        <div class="p-4 bg-indigo-50 rounded-lg text-center shadow-inner">
+            <p class="text-sm text-gray-600">Threat Prediction</p>
+            <p id="ml-prediction-output" class="text-2xl font-semibold text-indigo-500">Elevated Risk</p>
         </div>
     </div>
-    
-    <!-- Analytics Panels -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- CPU, RAM, and Swap Usage -->
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Client Machine Status</h3>
-            <div>
-                <p>CPU Usage: <span id="cpu-usage">45%</span></p>
-                <p>RAM Usage: <span id="ram-usage">3.2 GB</span></p>
-                <p>Swap Usage: <span id="swap-usage">1.5 GB</span></p>
-            </div>
-        </div>
-    
-        <!-- Network Traffic Graph -->
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Request Per Second</h3>
+</div>
+
+<!-- Real-Time Analytics Graphs -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Request Per Second</h3>
+        <div class="relative h-[300px]">
             <canvas id="requestGraph"></canvas>
         </div>
-    
-        <!-- Protocol Breakdown Pie Chart -->
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Protocol Traffic Breakdown</h3>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Protocol Traffic Breakdown</h3>
+        <div class="relative h-[300px]">
             <canvas id="protocolChart"></canvas>
         </div>
     </div>
-    
-    <!-- Attack History -->
-    <div class="mt-8">
-        <h3 class="text-xl font-semibold mb-4">Recent Attack History</h3>
-        <table class="min-w-full bg-white shadow-lg rounded-lg">
-            <thead>
-                <tr class="border-b">
-                    <th class="p-4 text-left font-semibold">Attack Type</th>
-                    <th class="p-4 text-left font-semibold">Time Period</th>
-                    <th class="p-4 text-left font-semibold">Downtime</th>
-                    <th class="p-4 text-left font-semibold">Overcome Time</th>
-                </tr>
-            </thead>
-            <tbody id="attack-history">
-                <tr>
-                    <td class="p-4">DDoS</td>
-                    <td class="p-4">3 min</td>
-                    <td class="p-4">1 min</td>
-                    <td class="p-4">4 min</td>
-                </tr>
-                <!-- Additional rows will be added dynamically -->
-            </tbody>
-        </table>
+</div>
+
+<!-- Additional Analytics Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Attack Sources Distribution</h3>
+        <div class="relative h-[300px]">
+            <canvas id="sourceIpChart"></canvas>
+        </div>
     </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">Port-Based Attack Frequency</h3>
+        <div class="relative h-[300px]">
+            <canvas id="portChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Attack History -->
+<div class="mt-8">
+    <h3 class="text-xl font-semibold mb-4">Recent Attack History</h3>
+    <table class="min-w-full bg-white shadow-lg rounded-lg">
+        <thead>
+            <tr class="border-b">
+                <th class="p-4 text-left font-semibold">Source IP</th>
+                <th class="p-4 text-left font-semibold">Time Period</th>
+                <th class="p-4 text-left font-semibold">Downtime</th>
+                <th class="p-4 text-left font-semibold">Recovery Time</th>
+                <th class="p-4 text-left font-semibold">Port Targeted</th>
+            </tr>
+        </thead>
+        <tbody id="attack-history">
+            <!-- Attack history rows populated here -->
+            <tr class="border-b">
+                <td class="p-4">192.168.0.101</td>
+                <td class="p-4">2024-11-10 12:15:30</td>
+                <td class="p-4">5 minutes</td>
+                <td class="p-4">2024-11-10 12:20:30</td>
+                <td class="p-4">80</td>
+            </tr>
+            <tr class="border-b">
+                <td class="p-4">203.0.113.25</td>
+                <td class="p-4">2024-11-10 13:00:10</td>
+                <td class="p-4">3 minutes</td>
+                <td class="p-4">2024-11-10 13:03:10</td>
+                <td class="p-4">443</td>
+            </tr>
+            <tr class="border-b">
+                <td class="p-4">198.51.100.72</td>
+                <td class="p-4">2024-11-10 14:45:00</td>
+                <td class="p-4">2 minutes</td>
+                <td class="p-4">2024-11-10 14:47:00</td>
+                <td class="p-4">22</td>
+            </tr>
+            <tr class="border-b">
+                <td class="p-4">192.0.2.14</td>
+                <td class="p-4">2024-11-10 16:30:45</td>
+                <td class="p-4">7 minutes</td>
+                <td class="p-4">2024-11-10 16:37:45</td>
+                <td class="p-4">8080</td>
+            </tr>
+            <tr class="border-b">
+                <td class="p-4">203.0.113.97</td>
+                <td class="p-4">2024-11-10 17:15:00</td>
+                <td class="p-4">4 minutes</td>
+                <td class="p-4">2024-11-10 17:19:00</td>
+                <td class="p-4">3306</td>
+            </tr>
+
+        </tbody>
+    </table>
+</div>
 {% endblock %}
 
 {% block script_area %}
-    <!-- Socket.io and Chart.js for real-time data handling -->
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Initialize charts with Chart.js
-        const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
-        const protocolChartCtx = document.getElementById('protocolChart').getContext('2d');
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts with Chart.js, setting dummy data and options
 
-        const requestGraph = new Chart(requestGraphCtx, {
-            type: 'line',
-            data: {
-                labels: Array.from({ length: 20 }, (_, i) => i + 1), // Sample labels
-                datasets: [{ label: 'Requests per second', data: [30, 50, 60, 70, 90, 100, 110, 130, 125], borderColor: '#4F46E5', fill: false }]
-            }
-        });
+    // Line chart for requests per second
+    const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
+    const requestGraph = new Chart(requestGraphCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({ length: 20 }, (_, i) => i + 1),
+            datasets: [{
+                label: 'Avg Packet Flow (packets/sec)',
+                data: [20, 45, 35, 60, 55, 70, 90, 110, 85, 65, 80, 100, 120, 110, 95, 70, 85, 65, 80, 100],
+                borderColor: '#4F46E5',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Packets per Second' } } }
+        }
+    });
 
-        const protocolChart = new Chart(protocolChartCtx, {
-            type: 'pie',
-            data: {
-                labels: ['HTTP', 'HTTPS', 'FTP', 'Other'],
-                datasets: [{ data: [55, 25, 10, 10], backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#DBEAFE'] }]
+    // Pie chart for protocol traffic breakdown
+    const protocolChartCtx = document.getElementById('protocolChart').getContext('2d');
+    const protocolChart = new Chart(protocolChartCtx, {
+        type: 'pie',
+        data: {
+            labels: ['HTTP', 'HTTPS', 'FTP', 'Other'],
+            datasets: [{
+                data: [60, 25, 10, 5],
+                backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#DBEAFE']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'left',
+                    labels: {
+                        font: {
+                            size: 15
+                        }
+                    }
+                }
             }
-        });
-    </script>
+        }
+    });
+
+    // Doughnut chart for IP address distribution in attacks
+    const sourceIpChartCtx = document.getElementById('sourceIpChart').getContext('2d');
+    const sourceIpChart = new Chart(sourceIpChartCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['192.168.1.5', '172.16.0.3', '203.0.113.8', '198.51.100.12'],
+            datasets: [{
+                data: [40, 25, 20, 15],
+                backgroundColor: ['#6366F1', '#4B5563', '#9CA3AF', '#D1D5DB']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'left',
+                    labels: {
+                        font: {
+                            size: 15
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Bar chart for attack frequency by port
+    const portChartCtx = document.getElementById('portChart').getContext('2d');
+    const portChart = new Chart(portChartCtx, {
+        type: 'bar',
+        data: {
+            labels: ['80', '443', '22', '8080', '53'],
+            datasets: [{
+                label: 'Port Attack Frequency',
+                data: [100, 80, 60, 50, 30],
+                backgroundColor: '#4F46E5'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Number of Attacks' } }
+            }
+        }
+    });
+
+    // Real-time data update example with Socket.io
+    const socket = io();
+    socket.on('data-update', function (data) {
+        // Update key metrics
+        document.getElementById('client-ip').textContent = data.clientIp;
+        document.getElementById('threat-level').textContent = data.threatLevel;
+        document.getElementById('bandwidth').textContent = `${data.bandwidth} Mbps`;
+        document.getElementById('avg-connection-rate').textContent = `${data.avgConnectionRate} conn/s`;
+
+        document.getElementById('cpu-usage').textContent = `${data.cpuUsage}%`;
+        document.getElementById('ram-usage').textContent = `${data.ramUsage} GB`;
+        document.getElementById('swap-usage').textContent = `${data.swapUsage} GB`;
+        document.getElementById('disk-usage').textContent = `${data.diskUsage}%`;
+
+        document.getElementById('ml-prediction-output').textContent = data.mlPrediction;
+        document.getElementById('packet-count').textContent = data.packetCount;
+        document.getElementById('attack-status').textContent = data.attackStatus;
+
+        // Update Recent Attack History with new data
+        let newRow = `<tr>
+            <td class="p-4">${data.sourceIp}</td>
+            <td class="p-4">${data.timePeriod}</td>
+            <td class="p-4">${data.downtime}</td>
+            <td class="p-4">${data.recoveryTime}</td>
+            <td class="p-4">${data.targetedPort}</td>
+        </tr>`;
+        document.getElementById('attack-history').innerHTML += newRow;
+
+        // Optionally, update data in charts for dynamic data visualization
+        requestGraph.data.datasets[0].data.push(data.newRequestRate);
+        requestGraph.update();
+
+        // Repeat similar updates for other charts if necessary
+    });
+</script>
 {% endblock %}
