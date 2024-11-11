@@ -1,6 +1,5 @@
 from scapy.all import sniff, IP
 import socket
-import json
 
 # Queue for communication with main.py
 data_queue = None

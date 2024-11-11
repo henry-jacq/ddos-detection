@@ -2,18 +2,24 @@
 import json
 import threading
 from queue import Queue, Empty
-import signal, sys
-import modules.sniffer as sniffer
-import modules.kafka_wrapper as kafka_wrapper
+from kafka import KafkaProducer
+import signal
+import sys
+import time
 
-# Load configuration
+# Import sniffer and system modules
+import modules.sniffer as sniffer
+import modules.system as system
+
+# Load Kafka configuration
 with open('agent_config.json', 'r') as f:
     config = json.load(f)
 
-# Initialize Kafka producer wrapper
-kafka_producer = kafka_wrapper.KafkaProducerWrapper(
+# Initialize Kafka producer with configuration options
+producer = KafkaProducer(
     bootstrap_servers=config['kafka']['bootstrap_servers'],
-    topics=config['kafka']['topics']  # Topics for each data type
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    max_in_flight_requests_per_connection=config['kafka'].get('max_in_flight_requests_per_connection', 5),
 )
 
 # Queue for thread-safe data handling
@@ -28,15 +34,28 @@ def send_data():
             if data is None:  # Termination signal received
                 break
 
-            # Send data to Kafka using the KafkaProducerWrapper
-            kafka_producer.send_data(data)
+            # Determine Kafka topic based on type
+            data_type = data['type']
+            print(f"[DEBUG] Processing data type: {data_type}")  # Debug for data type
 
-            # Mark the task as done
+            if data_type == "sniffer":
+                topic = config['kafka']['topics']['sniffer']
+            else:
+                print("[DEBUG] Unsupported data type")  # Handle other types if needed
+
+            # Send data to Kafka
+            producer.send(topic, data['data'])
+            print(f"-> {topic} topic data sent to Kafka: {data}")
+
+            # Pause between sending network data for readability
+            if data_type == "sniffer":
+                time.sleep(1)
+
             data_queue.task_done()
         except Empty:
             continue  # Timeout reached, recheck loop condition
         except Exception as e:
-            print(f"Error processing data: {e}")
+            print(f"Error sending data to Kafka: {e}")
 
 # Graceful shutdown handler
 def signal_handler(sig, frame):
@@ -44,7 +63,7 @@ def signal_handler(sig, frame):
     print("Shutting down gracefully...")
     is_running = False
     data_queue.put(None)  # Signal termination to the sending thread
-    kafka_producer.flush()  # Ensure all messages are sent before exiting
+    producer.flush()  # Ensure all messages are sent before exiting
     sys.exit(0)
 
 # Start a thread for the sniffer module to collect data
@@ -59,10 +78,10 @@ if __name__ == "__main__":
     # Register signal handler for graceful shutdown on Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
 
-    # Start threads for data sending and packet sniffing
+    # Start threads for data sending, packet sniffing, and system monitoring
     threading.Thread(target=send_data, daemon=True).start()
     interface = config['network']['interface']
-
+    
     if sniffer.get_network_ip():
         # Initialize the sniffer's queue with the main data_queue
         sniffer.initialize_queue(data_queue)
