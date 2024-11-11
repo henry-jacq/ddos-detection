@@ -250,7 +250,8 @@
 
     // Real-time data update example with Socket.io
     const socket = io();
-    socket.on('data-update', function (data) {
+    socket.on('system_data', function (data) {
+        console.log(data)
         // Update key metrics
         document.getElementById('client-ip').textContent = data.clientIp;
         document.getElementById('threat-level').textContent = data.threatLevel;

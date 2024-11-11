@@ -29,12 +29,11 @@ def process_packet(packet):
             "protocol": packet[IP].proto,
             "timestamp": packet.time
         }
-        # Add packet data to queue for main.py to consume
-        data_queue.put(packet_info)
+        # Add packet data to queue with a structured format
+        data_queue.put({"type": "sniffer", "data": packet_info})
 
 # Function to start the packet sniffer
 def collect_data(interface='eth0'):
-    print(f"Sniffer started on interface {interface}...")
     sniff(iface=interface, prn=process_packet, store=False)
 
 # Initialization method to set the shared data queue

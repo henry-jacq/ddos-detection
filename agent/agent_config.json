@@ -11,5 +11,7 @@
     "network": {
         "interface": "eth0"
     },
-    "collection_interval": 5
+    "system": {
+        "interval": 5
+    }
 }
