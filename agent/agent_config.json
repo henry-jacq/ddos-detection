@@ -1,12 +1,11 @@
 {
     "kafka": {
-      "bootstrap_servers": "localhost:9092",
+      "bootstrap_servers": "<IP_ADDR>:9092",
       "topic": "network_traffic",
-      "auto_offset_reset": "earliest",
       "max_in_flight_requests_per_connection": 5
     },
     "network": {
       "interface": "eth0",
-      "interval": 1
+      "interval": 5
     }
 }
