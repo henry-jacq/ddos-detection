@@ -1,0 +1,4 @@
+# Tail the Kafka log for real-time error monitoring
+tail -f /opt/kafka/logs/server.log
+
+
