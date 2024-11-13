@@ -43,8 +43,8 @@ class KafkaPacketConsumer:
             'Protocol': protocol_no,
             'Flow Duration': int(message_value.get('flow_duration', 0)),
             'Total Fwd Packets': int(message_value.get('total_fwd_packets', 0)),
-            'Total Backward Packets': int(message_value.get('total_backward_packets', 0)),
-            'Total Length of Fwd Packets': float(message_value.get('total_length_of_fwd_packets', 0.0)),
+            'Total Backward Packets': int(message_value.get('total_bwd_packets', 0)),
+            'Total Length of Fwd Packets': float(message_value.get('total_len_of_fwd_packets', 0.0)),
             'Fwd Packet Length Max': float(message_value.get('fwd_packet_length_max', 0.0)),
             'Fwd Packet Length Std': float(message_value.get('fwd_packet_length_std', 0.0)),
             'Bwd Packet Length Max': float(message_value.get('bwd_packet_length_max', 0.0)),
@@ -105,7 +105,6 @@ class KafkaPacketConsumer:
             try:
                 for message in consumer:
                     self.packet_count += 1
-                    message.value['timestamp'] = message.timestamp
 
                     preprocessed_data = self.preprocess_data(message.value)
                     prediction_result = self.predict(preprocessed_data)
