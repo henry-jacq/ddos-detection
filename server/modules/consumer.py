@@ -113,8 +113,8 @@ class KafkaPacketConsumer:
                     self.socketio.emit(message.topic, message.value)
                     self.socketio.emit("prediction", prediction_result)
 
-                    # Calculate packets/sec every 10 seconds
-                    if time.time() - self.start_time >= 10:
+                    # Calculate packets/sec every second
+                    if time.time() - self.start_time >= 1:
                         self.calculate_packets_per_second()
 
             except Exception as e:

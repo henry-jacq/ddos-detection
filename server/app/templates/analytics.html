@@ -84,7 +84,6 @@
         let pps = data.packets_per_sec_avg.toFixed(2);
         if (packet_count.innerText !== pps) {
             packet_count.innerText = pps;
-            console.log("Updating packet count to: " + pps);
         }
     });
     
@@ -99,7 +98,7 @@
                 attack_status.classList.add('text-red-500');
                 attack_status.classList.remove('text-green-500');
             } else {
-                attack_status.innerText = 'Active';
+                attack_status.innerText = 'Normal';
                 attack_status.classList.add('text-green-500');
                 attack_status.classList.remove('text-red-500');
             }
