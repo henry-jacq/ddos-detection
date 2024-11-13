@@ -24,6 +24,9 @@ host_ip = get_network_ip()
 def process_packet(packet):
     try:
         if packet.haslayer(IP) and packet[IP].dst == host_ip:
+            # Exclude SSH traffic (TCP port 22)
+            if packet.haslayer(TCP) and packet[TCP].dport == 22:
+                return  # Skip processing if it's TCP port 22
             flow_id = (packet[IP].src, host_ip, packet.sport, packet.dport)
             timestamp = datetime.now()
             packet_len = len(packet)

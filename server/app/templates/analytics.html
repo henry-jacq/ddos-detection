@@ -151,7 +151,6 @@
     });
 
     socket.on('packets_per_sec', function (data) {
-        console.log(data);
         const pps = parseFloat(data.packets_per_sec_avg.toFixed(2));
         const currentTime = Date.now();
 
@@ -166,15 +165,51 @@
         requestGraph.update();
     });
 
+    // Initialize protocol count object to keep track of protocol occurrences
+    let protocolCount = {
+        TCP: 0,
+        ICMP: 0,
+        UDP: 0,
+        SYN: 0,
+        HTTP: 0
+    };
+
+    // Update the protocol pie chart with incoming data
+    socket.on('protocol', function (data) {
+        // console.log("Protocol data received:", data);
+
+        // If the data has a valid protocol, increment the corresponding counter
+        if (data && data.protocol) {
+            const protocol = data.protocol.toUpperCase(); // Ensure it's uppercase
+            if (protocolCount[protocol] !== undefined) {
+                protocolCount[protocol] += 1; // Increment the count for the received protocol
+            } else {
+                console.warn(`Unknown protocol received: ${protocol}`);
+            }
+        }
+
+        // Log the updated protocol count for debugging
+        // console.log("Updated protocol count:", protocolCount);
+
+        // Prepare data for the pie chart
+        const protocolLabels = Object.keys(protocolCount);
+        const protocolValues = Object.values(protocolCount);
+
+        // Update the pie chart with new data
+        protocolChart.data.labels = protocolLabels;
+        protocolChart.data.datasets[0].data = protocolValues;
+        protocolChart.update();
+    });
+
     // Pie chart for protocol traffic breakdown
     const protocolChartCtx = document.getElementById('protocolChart').getContext('2d');
     const protocolChart = new Chart(protocolChartCtx, {
         type: 'pie',
         data: {
-            labels: ['HTTP', 'HTTPS', 'FTP', 'Other'],
+            labels: ['TCP', 'ICMP', 'UDP', 'SYN', 'HTTP'], // Initial labels for protocols
             datasets: [{
-                data: [60, 25, 10, 5],
-                backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#DBEAFE']
+                data: [0, 0, 0, 0, 0],  // Initialize with zero values
+                backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#F59E0B', '#10B981']
             }]
         },
         options: {
@@ -191,6 +226,45 @@
                 }
             }
         }
+    });
+
+
+    // Store attack IPs and their counts
+    let ipCounts = {};
+
+    // Function to update IP counts
+    function updateIpCounts(ip) {
+        if (ipCounts[ip]) {
+            ipCounts[ip]++;
+        } else {
+            ipCounts[ip] = 1;
+        }
+    }
+
+    // Function to update the chart with the 4 most influential IPs
+    function updateChart() {
+        // Sort the IPs by count (descending order)
+        const sortedIps = Object.entries(ipCounts)
+            .sort((a, b) => b[1] - a[1])  // Sort by count
+            .slice(0, 4);  // Take the top 4 IPs
+
+        // Get the top 4 IPs and their counts
+        const labels = sortedIps.map(item => item[0]);
+        const data = sortedIps.map(item => item[1]);
+
+        // Update the chart with new data
+        sourceIpChart.data.labels = labels;
+        sourceIpChart.data.datasets[0].data = data;
+        sourceIpChart.update();
+    }
+
+    // Socket event listener for attack IP
+    socket.on('attack_ip', function (data) {
+        // Update the IP counts with the new attack IP
+        updateIpCounts(data.attack_ip);
+
+        // Update the chart with the latest data
+        updateChart();
     });
 
     // Doughnut chart for IP address distribution in attacks
@@ -220,15 +294,55 @@
         }
     });
 
+    // Store attack ports and their counts
+    let portCounts = {};
+
+    // Function to update port counts
+    function updatePortCounts(port) {
+        if (portCounts[port]) {
+            portCounts[port]++;
+        } else {
+            portCounts[port] = 1;
+        }
+    }
+
+    // Function to update the chart with the most frequent ports
+    function updatePortChart() {
+        // Sort the ports by count (descending order)
+        const sortedPorts = Object.entries(portCounts)
+            .sort((a, b) => b[1] - a[1])  // Sort by count
+            .slice(0, 4);  // Take the top 4 ports
+
+        // Get the top 4 ports and their counts
+        const labels = sortedPorts.map(item => item[0]);
+        const data = sortedPorts.map(item => item[1]);
+
+        // Update the chart with new data
+        portChart.data.labels = labels;
+        portChart.data.datasets[0].data = data;
+        portChart.update();
+    }
+
+    // Socket event listener for attack port
+    socket.on('attack_port', function (data) {
+        console.log("Attack Port data received:", data);
+
+        // Update the port counts with the new attack port
+        updatePortCounts(data.attack_port);
+
+        // Update the chart with the latest data
+        updatePortChart();
+    });
+
     // Bar chart for attack frequency by port
     const portChartCtx = document.getElementById('portChart').getContext('2d');
     const portChart = new Chart(portChartCtx, {
         type: 'bar',
         data: {
-            labels: ['80', '443', '22', '8080', '53'],
+            labels: ['80', '443', '22', '8080', '53'], // Initial labels for common ports
             datasets: [{
                 label: 'Port Attack Frequency',
-                data: [100, 80, 60, 50, 30],
+                data: [100, 80, 60, 50, 30],  // Initial data
                 backgroundColor: '#4F46E5'
             }]
         },
@@ -236,11 +350,15 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Number of Attacks' } }
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Attacks' }
+                }
             }
         }
     });
 
 </script>
+
 
 {% endblock %}

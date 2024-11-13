@@ -109,15 +109,31 @@ class KafkaPacketConsumer:
                     preprocessed_data = self.preprocess_data(message.value)
                     prediction_result = self.predict(preprocessed_data)
 
+                    # Extract protocol from the message
+                    protocol = message.value.get('protocol', 'Unknown')
+                    
+                    # Attack source IP
+                    attack_ip = message.value.get('src_ip', 'Unknown')
+                    
+                    # attacks on ports
+                    attack_port = message.value.get('dst_port', 'Unknown')
+
+                    # Emit the original message and the prediction
                     self.socketio.emit(message.topic, message.value)
                     self.socketio.emit("prediction", prediction_result)
 
+
                     # Calculate packets/sec every 2 seconds
                     if time.time() - self.start_time >= 2:
+                        # Emit the protocol via socket
+                        self.socketio.emit("protocol", {"protocol": protocol})
+                        self.socketio.emit("attack_ip", {"attack_ip": attack_ip})
+                        self.socketio.emit("attack_port", {"attack_port": attack_port})
                         self.calculate_packets_per_second()
 
             except Exception as e:
                 logging.error(f"Error consuming data: {e}")
+
 
     def start_consumer(self):
         topics = self.kafka_config.get('topics', [])
