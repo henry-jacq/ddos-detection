@@ -42,7 +42,7 @@
 <!-- Real-Time Analytics Graphs -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
     <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Request Per Second</h3>
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Packets Per Second</h3>
         <div class="relative h-[300px]">
             <canvas id="requestGraph"></canvas>
         </div>
@@ -75,8 +75,9 @@
 {% block script_area %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script> <!-- Date adapter for time scale -->
+
 <script>
-    // Real-time data update example with Socket.io
     const socket = io('http://localhost:5001');
 
     socket.on('packets_per_sec', function (data) {
@@ -86,11 +87,11 @@
             packet_count.innerText = pps;
         }
     });
-    
+
     socket.on('prediction', function (data) {
         let prediction_output = document.getElementById('ml-prediction-output');
         let attack_status = document.getElementById('attack-status');
-        
+
         if (prediction_output.innerText !== data.attack_type) {
             prediction_output.innerText = data.attack_type;
             if (data.attack_type !== 'BENIGN') {
@@ -105,25 +106,64 @@
             console.log("Updating prediction output to: " + data.attack_type);
         }
     });
-    
-    // Line chart for requests per second
+
     const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
+
+    const requestData = {
+        labels: [],
+        datasets: [{
+            label: 'Avg Packet Flow (packets/sec)',
+            data: [],
+            borderColor: '#4F46E5',
+            fill: false
+        }]
+    };
+
     const requestGraph = new Chart(requestGraphCtx, {
         type: 'line',
-        data: {
-            labels: Array.from({ length: 20 }, (_, i) => i + 1),
-            datasets: [{
-                label: 'Avg Packet Flow (packets/sec)',
-                data: [20, 45, 35, 60, 55, 70, 90, 110, 85, 65, 80, 100, 120, 110, 95, 70, 85, 65, 80, 100],
-                borderColor: '#4F46E5',
-                fill: false
-            }]
-        },
+        data: requestData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, title: { display: true, text: 'Packets per Second' } } }
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'second'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Time (seconds)'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Packets per Second'
+                    },
+                    ticks: {
+                        stepSize: 20
+                    }
+                }
+            }
         }
+    });
+
+    socket.on('packets_per_sec', function (data) {
+        console.log(data);
+        const pps = parseFloat(data.packets_per_sec_avg.toFixed(2));
+        const currentTime = Date.now();
+
+        requestData.labels.push(currentTime);
+        requestData.datasets[0].data.push(pps);
+
+        if (requestData.labels.length > 16) {
+            requestData.labels.shift();
+            requestData.datasets[0].data.shift();
+        }
+
+        requestGraph.update();
     });
 
     // Pie chart for protocol traffic breakdown
@@ -202,4 +242,5 @@
     });
 
 </script>
+
 {% endblock %}
