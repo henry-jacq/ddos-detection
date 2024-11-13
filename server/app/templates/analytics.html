@@ -22,13 +22,13 @@
         <!-- Current Status -->
         <div class="p-6 border rounded-lg transition-shadow duration-300 ease-in-out text-center">
             <p class="text-gray-600 mb-2">Current Status</p>
-            <p id="attack-status" class="text-2xl font-semibold">Idle</p>
+            <p id="attack-status" class="text-2xl font-semibold">-</p>
         </div>
 
         <!-- Packets Analyzed -->
         <div class="p-6 rounded-lg border transition-shadow duration-300 ease-in-out text-center">
             <p class="text-gray-600 mb-2">Packets/sec (Avg)</p>
-            <p id="packet-count" class="text-2xl font-semibold text-gray-800">147</p>
+            <p id="packet-count" class="text-2xl font-semibold text-gray-800">-</p>
         </div>
 
         <!-- Threat Prediction -->
@@ -78,6 +78,15 @@
 <script>
     // Real-time data update example with Socket.io
     const socket = io('http://localhost:5001');
+
+    socket.on('packets_per_sec', function (data) {
+        let packet_count = document.getElementById('packet-count');
+        let pps = data.packets_per_sec_avg.toFixed(2);
+        if (packet_count.innerText !== pps) {
+            packet_count.innerText = pps;
+            console.log("Updating packet count to: " + pps);
+        }
+    });
     
     socket.on('prediction', function (data) {
         let prediction_output = document.getElementById('ml-prediction-output');

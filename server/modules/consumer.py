@@ -2,7 +2,6 @@ from kafka import KafkaConsumer
 from flask_socketio import SocketIO
 import threading, json, logging, time
 import numpy as np
-from collections import Counter
 
 
 class KafkaPacketConsumer:
@@ -12,7 +11,9 @@ class KafkaPacketConsumer:
         self.kafka_config = kafka_config
         self.socketio = socketio
         self.model = model
-        self.predictions = []  # Store predictions for aggregation
+        self.predictions = []
+        self.packet_count = 0
+        self.start_time = time.time()
 
     def get_kafka_consumer(self, topics):
         try:
@@ -22,8 +23,8 @@ class KafkaPacketConsumer:
                 auto_offset_reset=self.kafka_config['auto_offset_reset'],
                 value_deserializer=lambda x: json.loads(x.decode('utf-8')),
                 group_id=self.kafka_config['group_id'],
-                session_timeout_ms=30000,  # Adjust based on your needs
-                max_poll_interval_ms=600000  # Adjust if processing takes longer
+                session_timeout_ms=30000,
+                max_poll_interval_ms=600000
             )
             logging.info(f"Kafka consumer initialized for topics: {', '.join(topics)}")
             return consumer
@@ -79,40 +80,45 @@ class KafkaPacketConsumer:
         if self.predictions:
             majority_label = np.bincount(self.predictions).argmax()
             logging.info(f"Majority prediction for last interval: {majority_label}")
-            self.predictions.clear()  # Clear predictions after each aggregation
+            self.predictions.clear()
             return majority_label
         return None
+    
+    def calculate_packets_per_second(self):
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+
+        if elapsed_time > 0:
+            packets_per_sec = self.packet_count / elapsed_time
+            logging.info(f"Packets/sec (Avg): {packets_per_sec:.2f}")
+
+            # Reset the counters
+            self.packet_count = 0
+            self.start_time = current_time
+
+            # Emit the packets/sec via socket
+            self.socketio.emit("packets_per_sec", {"packets_per_sec_avg": packets_per_sec})
 
     def consume_data(self, topics):
         consumer = self.get_kafka_consumer(topics)
         if consumer:
             try:
                 for message in consumer:
+                    self.packet_count += 1
                     message.value['timestamp'] = message.timestamp
+
                     preprocessed_data = self.preprocess_data(message.value)
                     prediction_result = self.predict(preprocessed_data)
-                    # print(prediction_result)
-                    # self.predictions.append(predicted_label)
-                    
-                    # Emit the data via socket
+
                     self.socketio.emit(message.topic, message.value)
-                    
-                    # prediction_result['attack_type']  = "WebDDoS"
-                    
-                    # Emit the prediction result via socket
                     self.socketio.emit("prediction", prediction_result)
-                    
+
+                    # Calculate packets/sec every 10 seconds
+                    if time.time() - self.start_time >= 10:
+                        self.calculate_packets_per_second()
+
             except Exception as e:
                 logging.error(f"Error consuming data: {e}")
-
-    def start_aggregation_thread(self, interval=10):
-        def aggregate_periodically():
-            while True:
-                time.sleep(interval)
-                self.aggregate_predictions()
-
-        thread = threading.Thread(target=aggregate_periodically, daemon=True)
-        thread.start()
 
     def start_consumer(self):
         topics = self.kafka_config.get('topics', [])
@@ -120,8 +126,6 @@ class KafkaPacketConsumer:
         consumer_thread.start()
         logging.info(f"Started consumer for topics: {', '.join(topics)}")
 
-        # Start the aggregation thread with the specified interval
-        self.start_aggregation_thread()
 
 def start_kafka_consumer(kafka_config, socketio, model):
     consumer = KafkaPacketConsumer(kafka_config, socketio, model)
