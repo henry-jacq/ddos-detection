@@ -5,7 +5,6 @@ from queue import Queue, Empty
 from kafka import KafkaProducer
 import signal
 import sys
-import time
 
 # Import sniffer and system modules
 import modules.sniffer as sniffer
@@ -45,11 +44,8 @@ def send_data():
 
             # Send data to Kafka
             producer.send(topic, data['data'])
+            producer.flush()  # Ensure data is sent immediately
             print(f"-> {topic} topic data sent to Kafka: {data}")
-
-            # Pause between sending network data for readability
-            if data_type == "sniffer":
-                time.sleep(1)
 
             data_queue.task_done()
         except Empty:

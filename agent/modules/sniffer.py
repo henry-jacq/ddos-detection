@@ -1,5 +1,5 @@
 from scapy.all import sniff, IP, TCP, UDP, ICMP
-import socket
+import socket, time
 
 # Queue for communication with main.py
 data_queue = None
@@ -39,7 +39,7 @@ def process_packet(packet):
             }
 
             # Add protocol-specific details
-            if packet.haslayer(TCP):
+            if packet.haslayer(TCP) and packet[TCP].dport != 22:
                 packet_info.update({
                     'src_port': packet[TCP].sport,
                     'dst_port': packet[TCP].dport,
@@ -58,6 +58,8 @@ def process_packet(packet):
                     'type': packet[ICMP].type,
                     'code': packet[ICMP].code,
                 })
+
+            # time.sleep(1)
 
             # Add packet data to queue with a structured format
             data_queue.put({"type": "sniffer", "data": packet_info})

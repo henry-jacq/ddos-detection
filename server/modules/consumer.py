@@ -88,16 +88,19 @@ class KafkaPacketConsumer:
         if consumer:
             try:
                 for message in consumer:
+                    message.value['timestamp'] = message.timestamp
+                    preprocessed_data = self.preprocess_data(message.value)
+                    prediction_result = self.predict(preprocessed_data)
+                    # print(prediction_result)
+                    # self.predictions.append(predicted_label)
+                    
                     # Emit the data via socket
-                    if message.topic == "network_traffic":
-                        # preprocessed_data = self.preprocess_data(message.value)
-                        # prediction_result = self.predict(preprocessed_data)
-                        # predicted_label = prediction_result["attack_type"]
-                        # self.predictions.append(predicted_label)
-                        self.socketio.emit(message.topic, {"data": message.value})
+                    self.socketio.emit(message.topic, message.value)
+                    
+                    # prediction_result['attack_type']  = "WebDDoS"
                     
                     # Emit the prediction result via socket
-                    # self.socketio.emit("prediction", {"data": message.value})
+                    self.socketio.emit("prediction", prediction_result)
                     
             except Exception as e:
                 logging.error(f"Error consuming data: {e}")

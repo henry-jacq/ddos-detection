@@ -9,7 +9,7 @@
 <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
     <!-- Inline -->
     <div class="flex items-center justify-start">
-        <h3 class="text-lg font-semibold text-gray-800 mb-1">Packet Analysis</h3>
+        <h3 class="text-lg font-semibold text-gray-800 mb-1">Real-time Packet Analysis</h3>
         <p class="text-gray-500 ms-2">(Insights generated using XGBoost)</p>
     </div>
     <blockquote class="border-l-4 border-gray-600 pl-3 my-4">
@@ -22,7 +22,7 @@
         <!-- Current Status -->
         <div class="p-6 border rounded-lg transition-shadow duration-300 ease-in-out text-center">
             <p class="text-gray-600 mb-2">Current Status</p>
-            <p id="attack-status" class="text-2xl font-semibold text-green-600">Normal</p>
+            <p id="attack-status" class="text-2xl font-semibold">Idle</p>
         </div>
 
         <!-- Packets Analyzed -->
@@ -34,7 +34,7 @@
         <!-- Threat Prediction -->
         <div class="p-6 rounded-lg border transition-shadow duration-300 ease-in-out text-center">
             <p class="text-gray-600 mb-2">Threat Prediction</p>
-            <p id="ml-prediction-output" class="text-2xl font-semibold text-indigo-600">BENIGN</p>
+            <p id="ml-prediction-output" class="text-2xl font-semibold text-indigo-600">-</p>
         </div>
     </div>
 </div>
@@ -77,9 +77,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Real-time data update example with Socket.io
-    const socket = io();
+    const socket = io('http://localhost:5001');
+    
     socket.on('prediction', function (data) {
-        console.log("Received prediction data: ", data);
+        let prediction_output = document.getElementById('ml-prediction-output');
+        let attack_status = document.getElementById('attack-status');
+        
+        if (prediction_output.innerText !== data.attack_type) {
+            prediction_output.innerText = data.attack_type;
+            if (data.attack_type !== 'BENIGN') {
+                attack_status.innerText = 'Under Attack';
+                attack_status.classList.add('text-red-500');
+                attack_status.classList.remove('text-green-500');
+            } else {
+                attack_status.innerText = 'Active';
+                attack_status.classList.add('text-green-500');
+                attack_status.classList.remove('text-red-500');
+            }
+            console.log("Updating prediction output to: " + data.attack_type);
+        }
     });
     
     // Line chart for requests per second
