@@ -6,66 +6,39 @@
 <h2 class="text-3xl font-bold text-gray-900 mb-6">Real-time Network Traffic</h2>
 
 <!-- Stats Section -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
-        <div>
-            <p class="text-sm text-gray-500">Threat Level</p>
-            <h3 id="threat-level" class="text-2xl font-semibold text-green-500">Safe</h3>
-        </div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-6 flex flex-col justify-center items-center">
+        <p class="text-gray-500">Peak Traffic Rate</p>
+        <h3 id="peak-traffic-rate" class="text-2xl font-bold">1200 conn/s</h3>
     </div>
-    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
-        <div>
-            <p class="text-sm text-gray-500">Bandwidth</p>
-            <h3 id="bandwidth" class="text-2xl font-semibold">100 Mbps</h3>
-        </div>
+    <div class="bg-white rounded-lg shadow-lg p-6 flex flex-col justify-center items-center">
+        <p class="text-gray-500">Bandwidth</p>
+        <h3 id="bandwidth" class="text-2xl font-bold">100 Mbps</h3>
     </div>
-    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
-        <div>
-            <p class="text-sm text-gray-500">Avg Connection Rate</p>
-            <h3 id="avg-connection-rate" class="text-2xl font-semibold">500 conn/s</h3>
-        </div>
-    </div>
-</div>
-
-<!-- Update and Packet Delay Controls -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
-        <div>
-            <label for="updateDelayInput" class="text-sm text-gray-500">Update Delay (ms)</label>
-            <input type="number" id="updateDelayInput" value="1000" min="100"
-                class="w-full md:w-28 border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-        </div>
-    </div>
-    <div class="bg-white rounded-lg shadow-lg p-6 flex justify-between items-center">
-        <div>
-            <label for="packetDelayInput" class="text-sm text-gray-500">Packet Delay (ms)</label>
-            <input type="number" id="packetDelayInput" value="100" min="50"
-                class="w-full md:w-28 border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-        </div>
-    </div>
-</div>
-
-<!-- Action Buttons -->
-<div class="flex justify-between items-center mb-8">
-    <div class="flex space-x-3">
-        <button id="captureButton"
-            class="text-sm border rounded-lg px-6 py-3 bg-green-600 text-white transition-all flex items-center space-x-2">
-            <i class="fas fa-play"></i><span>Start Capturing</span>
-        </button>
-        <button id="clearLogsButton"
-            class="text-sm border rounded-lg px-6 py-3 bg-gray-500 text-white hover:bg-gray-600 focus:ring-2 focus:ring-gray-300 transition-all disabled:opacity-50"
-            disabled>
-            Clear Logs
-        </button>
+    <div class="bg-white rounded-lg shadow-lg p-6 flex flex-col justify-center items-center">
+        <p class="text-gray-500">Avg Connection Rate</p>
+        <h3 id="avg-connection-rate" class="text-2xl font-bold">500 conn/s</h3>
     </div>
 </div>
 
 <!-- Traffic Details List -->
+<h3 class="text-2xl font-semibold mb-4">Traffic Monitor</h3>
 <div class="bg-white rounded-lg shadow-lg p-6">
-    <h3 class="text-xl font-semibold mb-4">Traffic Monitor</h3>
-    <div id="traffic-list" class="space-y-4 overflow-y-auto h-96 pr-4 rounded-lg text-gray-700">
+    <!-- Action Buttons -->
+    <div class="space-x-4 mb-6">
+        <button id="captureButton"
+            class="text-sm px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 transform">
+            <i class="fas fa-play mr-2"></i> Start Capturing
+        </button>
+        <button id="clearLogsButton"
+            class="text-sm px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-lg shadow-lg hover:from-gray-500 hover:to-gray-600 focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-200 transform disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled>
+            Clear Logs
+        </button>
+    </div>
+    <div id="traffic-list" class="space-y-4 overflow-y-auto h-96 pr-4 rounded-lg text-gray-700 bg-gray-50 p-4">
         <div id="start-capture-message"
-            class="text-center text-gray-500 bg-gray-50 p-12 rounded-lg m-auto h-full flex items-center justify-center">
+            class="text-center text-gray-500 bg-gray-50 py-12 rounded-lg flex items-center justify-center mt-28">
             No data to display. Start capturing traffic.
         </div>
     </div>
@@ -78,27 +51,13 @@
 <script>
     let socket = null;
     let capturing = false;
-    let updateDelay = 1000; // Default update delay (ms)
-    let packetDelay = 100; // Default delay between packets (ms)
-    let trafficQueue = []; // Queue to store emitted traffic packets
-    let currentPacketIndex = 0; // Track current packet to be displayed
+    let trafficQueue = [];
+    let currentPacketIndex = 0;
 
     const trafficList = document.getElementById('traffic-list');
     const startCaptureMessage = document.getElementById('start-capture-message');
     const captureButton = document.getElementById('captureButton');
     const clearLogsButton = document.getElementById('clearLogsButton');
-    const updateDelayInput = document.getElementById('updateDelayInput');
-    const packetDelayInput = document.getElementById('packetDelayInput');
-
-    // Listen to change in update delay input
-    updateDelayInput.addEventListener('input', () => {
-        updateDelay = parseInt(updateDelayInput.value) || 1000; // Ensure it's a valid number
-    });
-
-    // Listen to change in packet delay input
-    packetDelayInput.addEventListener('input', () => {
-        packetDelay = parseInt(packetDelayInput.value) || 100; // Ensure it's a valid number
-    });
 
     captureButton.addEventListener('click', () => {
         capturing = !capturing;
@@ -108,34 +67,37 @@
     clearLogsButton.addEventListener('click', () => {
         trafficList.innerHTML = '';
         trafficList.appendChild(startCaptureMessage);
-        trafficQueue = []; // Reset the traffic data
+        trafficQueue = [];
         currentPacketIndex = 0;
-        clearLogsButton.disabled = true; // Disable the button again after clearing
+        clearLogsButton.disabled = true;
     });
 
     function toggleCapture() {
         if (capturing) {
             socket = io();
-            captureButton.classList.replace('bg-green-600', 'bg-red-600');
-            captureButton.querySelector('i').classList.remove('fa-play');
-            captureButton.querySelector('i').classList.add('fa-stop');
-            captureButton.querySelector('span').textContent = 'Stop Capturing';
+            captureButton.classList.remove('from-green-500', 'to-green-600');
+            captureButton.classList.remove('hover:from-green-600', 'hover:to-green-700');
+            captureButton.classList.add('from-red-500', 'to-red-600', 'focus:ring-red-400');
+            captureButton.classList.add('hover:from-red-600', 'hover:to-red-700');
+            captureButton.innerHTML = `<i class="fas fa-stop mr-2"></i> Stop Capturing`;
 
             socket.on('network_traffic', (data) => {
                 startCaptureMessage.remove();
-                // Add data to the queue
-                trafficQueue.unshift(data); // Prepend data to the queue
-                processTrafficQueue(); // Process the queue with delay
+                trafficQueue.unshift(data);
+                processTrafficQueue();
             });
         } else {
-            captureButton.classList.replace('bg-red-600', 'bg-green-600');
-            captureButton.querySelector('i').classList.remove('fa-stop');
-            captureButton.querySelector('i').classList.add('fa-play');
-            captureButton.querySelector('span').textContent = 'Start Capturing';
-            socket.disconnect();
-            socket = null;
+            captureButton.classList.remove('from-red-500', 'to-red-600');
+            captureButton.classList.remove('hover:from-red-600', 'hover:to-red-700');
+            captureButton.classList.add('from-green-500', 'to-green-600', 'focus:ring-green-400');
+            captureButton.classList.add('hover:from-green-600', 'hover:to-green-700');
+            captureButton.innerHTML = `<i class="fas fa-play mr-2"></i> Start Capturing`;
+            
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
 
-            // Enable "Clear Logs" button after stopping capture if there is data
             if (trafficQueue.length > 0) {
                 clearLogsButton.disabled = false;
             }
@@ -144,30 +106,36 @@
 
     function processTrafficQueue() {
         if (currentPacketIndex < trafficQueue.length) {
-            // Delay the update of traffic data based on the update delay
-            setTimeout(() => {
-                displayTrafficData(trafficQueue[currentPacketIndex]);
-                currentPacketIndex++;
-                processTrafficQueue(); // Continue processing the queue with delay
-            }, updateDelay);
+            displayTrafficData(trafficQueue[currentPacketIndex]);
+            currentPacketIndex++;
         }
     }
 
     function displayTrafficData(packet) {
-        let data = packet.data;
+        const data = packet.data;
         const trafficItem = document.createElement('div');
-        trafficItem.className = 'bg-gray-100 p-4 rounded-lg shadow-sm text-sm border border-gray-200';
-        trafficItem.innerHTML = ` 
-            <strong>Timestamp:</strong> ${new Date(data.timestamp * 1000).toLocaleString()}<br>
-            <strong>Source IP:</strong> ${data.src_ip}<br>
-            <strong>Destination IP:</strong> ${data.dst_ip}<br>
-            <strong>Protocol:</strong> ${data.protocol}<br>
-            <strong>Packet length:</strong> ${data.packet_length} bytes
-        `;
-        trafficList.insertBefore(trafficItem, trafficList.firstChild);
+        trafficItem.className = 'bg-white p-6 rounded-lg shadow-lg text-sm border border-gray-200 mb-4';
 
-        // Delay the display of the next packet based on the packet delay
-        setTimeout(() => { }, packetDelay);
+        trafficItem.innerHTML = `
+        <div class="flex items-center space-x-4 mb-2">
+            <p class="text-gray-500"><strong>Timestamp:</strong> ${new Date(data.timestamp * 1000).toLocaleString()}</p>
+        </div>
+        <div class="flex items-center space-x-4 mb-2">
+            <p class="text-gray-600"><strong>Source IP:</strong> ${data.src_ip}</p>
+        </div>
+        <div class="flex items-center space-x-4 mb-2">
+            <p class="text-gray-600"><strong>Destination IP:</strong> ${data.dst_ip}</p>
+        </div>
+        <div class="flex items-center space-x-4 mb-2">
+            <p class="text-gray-600"><strong>Protocol:</strong> ${data.protocol}</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <p class="text-gray-600"><strong>Packet Length:</strong> ${data.packet_length} bytes</p>
+        </div>
+    `;
+
+        trafficList.insertBefore(trafficItem, trafficList.firstChild);
     }
+
 </script>
 {% endblock %}
