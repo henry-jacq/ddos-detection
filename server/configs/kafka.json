@@ -2,5 +2,6 @@
     "bootstrap_servers": "103.14.121.164:9092",
     "topics": ["network_traffic", "network_analytics"],
     "auto_offset_reset": "earliest",
-    "max_in_flight_requests_per_connection": 5
+    "max_in_flight_requests_per_connection": 5,
+    "group_id": "ddos_detection"
 }

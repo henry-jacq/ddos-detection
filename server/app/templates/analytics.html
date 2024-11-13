@@ -10,25 +10,25 @@
     <!-- Inline -->
     <div class="flex items-center justify-start">
         <h3 class="text-lg font-semibold text-gray-800 mb-1">Packet Analysis</h3>
-        <p class="text-gray-500 ms-2">(Insights generated using XGBoost Model)</p>
+        <p class="text-gray-500 ms-2">(Insights generated using XGBoost)</p>
     </div>
     <blockquote class="border-l-4 border-gray-600 pl-3 my-4">
         <p class="text-gray-500 my-3">
-            Provides real-time aggregated predictions based on captured network traffic,<br>
-            updated every second to reflect current network activity.
+            Provides aggregated predictions based on captured network traffic,<br>
+            Updated every second to reflect current network activity.
         </p>
     </blockquote>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-3">
         <!-- Current Status -->
         <div class="p-6 border rounded-lg transition-shadow duration-300 ease-in-out text-center">
             <p class="text-gray-600 mb-2">Current Status</p>
-            <p id="attack-status" class="text-2xl font-semibold text-red-600">Under Attack</p>
+            <p id="attack-status" class="text-2xl font-semibold text-green-600">Normal</p>
         </div>
 
         <!-- Packets Analyzed -->
         <div class="p-6 rounded-lg border transition-shadow duration-300 ease-in-out text-center">
-            <p class="text-gray-600 mb-2">Packets Analyzed</p>
-            <p id="packet-count" class="text-2xl font-semibold text-gray-800">2,340</p>
+            <p class="text-gray-600 mb-2">Packets/sec (Avg)</p>
+            <p id="packet-count" class="text-2xl font-semibold text-gray-800">147</p>
         </div>
 
         <!-- Threat Prediction -->
@@ -73,11 +73,15 @@
 {% endblock %}
 
 {% block script_area %}
-<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Initialize charts with Chart.js, setting dummy data and options
-
+    // Real-time data update example with Socket.io
+    const socket = io();
+    socket.on('prediction', function (data) {
+        console.log("Received prediction data: ", data);
+    });
+    
     // Line chart for requests per second
     const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
     const requestGraph = new Chart(requestGraphCtx, {
@@ -173,15 +177,5 @@
         }
     });
 
-    // Real-time data update example with Socket.io
-    const socket = io();
-    socket.on('system_data', function (data) {
-        console.log(data)
-        // Update key metrics dynamically
-        document.getElementById('attack-status').textContent = data.attackStatus;
-        document.getElementById('attack-type').textContent = 'Attack Type: ' + data.attackType;
-        document.getElementById('packet-count').textContent = data.packetCount;
-        document.getElementById('ml-prediction-output').textContent = data.mlPredictionOutput;
-    });
 </script>
 {% endblock %}

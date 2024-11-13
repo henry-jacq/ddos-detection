@@ -44,7 +44,8 @@ def start_flask_app(host="0.0.0.0", port=5000, debug=True, db=None):
     # Starts the Flask-SocketIO application with the database instance
     global db_instance
     db_instance = db # Assign the database instance
-    socketio.run(app, host=host, port=port, debug=debug)
+    print(f"[+] Starting Flask app with SocketIO at {host}:{port}")
+    socketio.run(app, host=host, port=port, debug=debug, use_reloader=True)
 
 # Entry point for the application
 if __name__ == "__main__":

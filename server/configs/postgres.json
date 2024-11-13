@@ -1,8 +1,8 @@
 {
     "postgres": {
-      "database": "ddos_detection",
-      "user": "ddos_user",
-      "password": "your_password",
+      "database": "ddos_db",
+      "user": "henry",
+      "password": "henry",
       "host": "localhost",
       "port": "5432"
     }

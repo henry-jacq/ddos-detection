@@ -4,18 +4,35 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from netaddr import IPAddress
+from threading import Lock
+import warnings
+import xgboost as xgb
+
+# Handle xgboost warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 class DDoSDetectionModel:
     _instance = None
-    
+    _lock = Lock()
+
     def __init__(self, label_mapping=None):
-        # Append the filename to the current path
-        model_path = os.path.join(os.getcwd(), 'xgboost_model.pkl')
-        
-        # Load pre-trained model
-        with open(model_path, 'rb') as file:
-            self.model = joblib.load(file)
-        
+        """Initialize the model by loading from a file and setting up components."""
+        model_path = os.path.join(os.path.dirname(__file__), 'best_model.pkl')
+        try:
+            with open(model_path, 'rb') as file:
+                self.model = joblib.load(file)
+            print(f"[+] Model loaded successfully from {model_path}")
+        except FileNotFoundError:
+            print(f"[-] Error: Model file not found at {model_path}")
+            raise
+        except Exception as e:
+            print(f"[-] Error loading model: {e}")
+            raise
+
+        # Check for GPU availability
+        self.device = "gpu_hist" if self.is_gpu_available() else "hist"
+        print(f"[+] Using '{self.device}' as the tree method.")
+
         # Define the label mapping
         self.label_mapping = label_mapping or {
             0: 'BENIGN',
@@ -31,14 +48,30 @@ class DDoSDetectionModel:
             10: 'WebDDoS'
         }
 
-        # Initialize the scaler for data normalization
+        # Initialize the scaler for data normalization only once
         self.scaler = StandardScaler()
-        
+
     @staticmethod
-    def getInstance():
-        if not hasattr(DDoSDetectionModel, "_instance"):
-            DDoSDetectionModel._instance = DDoSDetectionModel()
-        return DDoSDetectionModel._instance
+    def is_gpu_available():
+        """Check if GPU is available for XGBoost."""
+        try:
+            return xgb.get_config().get('device', '') == 'gpu'
+        except Exception as e:
+            print(f"Error checking for GPU: {e}")
+            return False
+
+    @classmethod
+    def getInstance(cls):
+        """Retrieve the singleton instance, creating it if necessary."""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:  # Double-checked locking
+                    try:
+                        cls._instance = cls()
+                    except Exception as e:
+                        print(f"Failed to initialize model instance: {e}")
+                        raise
+        return cls._instance
 
     def ip_to_numeric(self, ip):
         """Convert IP address to numeric format."""
@@ -48,7 +81,7 @@ class DDoSDetectionModel:
         """Preprocess input data for prediction."""
         data = pd.DataFrame(input_data)
         
-        # Ensure all data types are numeric
+        # Define data types
         numeric_dtypes = {
             'Source IP': 'int64',
             'Source Port': 'int64',
@@ -85,29 +118,39 @@ class DDoSDetectionModel:
             'Inbound': 'int64'
         }
         data = data.astype(numeric_dtypes)
-
-        # Normalize the data
-        return self.scaler.fit_transform(data)
+        return data
 
     def predict(self, input_data):
         """Predict the attack type based on input data."""
         # Preprocess the data for prediction
-        data_normalized = self.preprocess_data(input_data)
+        preprocessed_data = self.preprocess_data(input_data)
+        
+        # Normalize the data
+        data_normalized = self.scaler.fit_transform(preprocessed_data)
 
-        # Perform prediction
+        # Predict with the model
         prediction = self.model.predict(data_normalized)
-        prediction_output = np.round(np.array(prediction), 3)
 
-        # Determine the class with the highest probability
-        predicted_class_index = prediction_output.argmax()
-        predicted_class_probability = prediction_output[0, predicted_class_index]
+        # Determine the predicted class
+        if isinstance(prediction, np.ndarray) and prediction.ndim > 1 and prediction.shape[1] > 1:
+            predicted_class = np.argmax(prediction, axis=1)[0]
+        else:
+            predicted_class = int(prediction[0]) if isinstance(prediction, np.ndarray) else int(prediction)
 
-        # Map the predicted class to the corresponding label
-        predicted_label = self.label_mapping.get(predicted_class_index, "Unknown")
+        # Map prediction to label
+        predicted_label = self.label_mapping.get(predicted_class, "Unknown")
+        
+        # Return a dictionary as expected by KafkaPacketConsumer
+        output = {"predicted_class": predicted_class, "attack_type": predicted_label}
+        return output
 
-        # Return the prediction result
-        return {
-            "class_index": predicted_class_index,
-            "class_probability": predicted_class_probability,
-            "attack_type": predicted_label
-        }
+
+def init_model():
+    try:
+        instance = DDoSDetectionModel.getInstance()
+        if instance is None:
+            raise ValueError("Model instance failed to initialize.")
+        return instance
+    except Exception as e:
+        print(f"Model initialization error: {e}")
+        raise
