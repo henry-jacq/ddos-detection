@@ -106,7 +106,7 @@
 
             trafficItem.innerHTML = `
         <div class="flex items-center space-x-4">
-            <p class="text-gray-500">${new Date(data.timestamp * 1000).toLocaleString()}</p>
+            <p class="text-gray-500">${new Date(data.timestamp).toLocaleString()}</p>
             <i class="fas fa-arrow-right text-gray-500"></i>
         </div>
         <div class="flex items-center space-x-4">
@@ -116,10 +116,10 @@
             <p class="text-gray-600"><strong>Destination IP:</strong> ${data.dst_ip}</p>
         </div>
         <div class="flex items-center space-x-4">
-            <p class="text-gray-600"><strong>Protocol:</strong> ${protocol_mapping[data.protocol]}</p>
+            <p class="text-gray-600"><strong>Protocol:</strong> ${data.protocol}</p>
         </div>
         <div class="flex items-center space-x-4">
-            <p class="text-gray-600"><strong>Packet Length:</strong> ${data.packet_length} bytes</p>
+            <p class="text-gray-600"><strong>Packet Length:</strong> ${data.fwd_packet_length_max} bytes</p>
         </div>
     `;
         trafficList.insertBefore(trafficItem, trafficList.firstChild);
