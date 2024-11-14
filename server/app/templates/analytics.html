@@ -168,10 +168,7 @@
     // Initialize protocol count object to keep track of protocol occurrences
     let protocolCount = {
         TCP: 0,
-        ICMP: 0,
-        UDP: 0,
-        SYN: 0,
-        HTTP: 0
+        UDP: 0
     };
 
     // Update the protocol pie chart with incoming data
@@ -206,10 +203,10 @@
     const protocolChart = new Chart(protocolChartCtx, {
         type: 'pie',
         data: {
-            labels: ['TCP', 'UDP', 'ICMP'], // Initial labels for protocols
+            labels: ['TCP', 'UDP'], // Initial labels for protocols
             datasets: [{
-                data: [0, 0, 0],  // Initialize with zero values
-                backgroundColor: ['#1D4ED8', '#4F46E5', '#A5B4FC']
+                data: [0, 0],  // Initialize with zero values
+                backgroundColor: ['#1D4ED8', '#A5B4FC']
             }]
         },
         options: {
