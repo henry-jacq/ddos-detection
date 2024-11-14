@@ -124,7 +124,7 @@ def serialize_data(data):
 
 def collect_data(interface='eth0'):
     try:
-        sniff(iface=interface, prn=process_packet, store=False)
+        sniff(filter='ip', iface=interface, prn=process_packet, store=False)
     except Exception as e:
         print(f"Error during sniffing: {e}")
 

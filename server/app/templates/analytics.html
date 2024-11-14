@@ -206,10 +206,10 @@
     const protocolChart = new Chart(protocolChartCtx, {
         type: 'pie',
         data: {
-            labels: ['TCP', 'ICMP', 'UDP', 'SYN', 'HTTP'], // Initial labels for protocols
+            labels: ['TCP', 'ICMP', 'UDP', 'SYN'], // Initial labels for protocols
             datasets: [{
-                data: [0, 0, 0, 0, 0],  // Initialize with zero values
-                backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#F59E0B', '#10B981']
+                data: [0, 0, 0, 0],  // Initialize with zero values
+                backgroundColor: ['#4F46E5', '#1D4ED8', '#A5B4FC', '#F59E0B']
             }]
         },
         options: {
