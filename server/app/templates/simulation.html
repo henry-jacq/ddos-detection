@@ -3,109 +3,99 @@
 {% block title %}Simulate Attacks{% endblock %}
 
 {% block content_area %}
-<h2 class="text-3xl font-bold text-gray-800 mb-6">Simulate DDoS Attacks</h2>
+<div class="container mx-auto px-6 py-8">
+    <h2 class="text-4xl font-extrabold text-gray-800 mb-8">Simulate DDoS Attacks</h2>
 
-<!-- Attack Simulation Control Panel Component -->
-<div class="border border-gray-200 rounded-lg shadow-lg p-4 mb-6 max-w-full">
-    <!-- Input Fields Row -->
-    <div class="flex flex-wrap gap-4 mb-4 text-gray-700">
-        <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
-            <i class="fas fa-bolt text-red-500"></i>
-            <span class="font-semibold">Attack:</span>
-            <select id="attackType"
-                class="border rounded-md px-2 py-1 flex-grow hover:shadow focus:outline-none focus:ring-2 focus:ring-red-600">
-                <option value="SYN_Flood">SYN Flood</option>
-                <option value="UDP_Flood">UDP Flood (DNS)</option>
-                <option value="HTTP_Flood">HTTP Flood (80)</option>
-            </select>
-        </div>
-        <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
-            <i class="fas fa-network-wired text-purple-500"></i>
-            <label for="targetSystem" class="font-semibold">Target:</label>
-            <input type="text" id="targetSystem"
-                class="border rounded-lg px-2 py-1 flex-grow hover:shadow focus:outline-none focus:ring-2 focus:ring-purple-600"
-                placeholder="e.g., 192.168.1.1">
-        </div>
-        <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
-            <i class="fas fa-clock text-blue-500"></i>
-            <span class="font-semibold">Duration (s):</span>
-            <input type="number" id="attackDuration"
-                class="border rounded-md px-2 py-1 flex-grow hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-600"
-                value="60" min="1" max="300">
-        </div>
-        <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
-            <i class="fas fa-tachometer-alt text-green-500"></i>
-            <span class="font-semibold">Intensity:</span>
-            <input type="range" id="attackIntensity" class="w-full flex-grow" value="50" min="1" max="100">
-            <span id="attackIntensityValue" class="text-gray-600">50</span>
-        </div>
-    </div>
-
-    <!-- Control Buttons Row -->
-    <div class="flex flex-wrap gap-2 mt-4">
-        <button id="startAttackButton"
-            class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 flex-grow md:flex-grow-0 md:w-auto">
-            Start Attack
-        </button>
-        <button id="stopAttackButton"
-            class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition duration-200 flex-grow md:flex-grow-0 md:w-auto hidden">
-            Stop Attack
-        </button>
-    </div>
-</div>
-
-
-<!-- Progress and Logs Component -->
-<div class="border border-gray-300 p-4 rounded-lg shadow-md max-h-64 text-gray-800 mb-6 w-full mx-auto">
-    <!-- Simulation Progress Section -->
-    <div class="mb-4">
-        <label for="progressBar" class="font-semibold text-gray-800">Simulation Progress:</label>
-        <div class="relative mt-2 bg-gray-200 rounded-full overflow-hidden h-5">
-            <div id="progressBarInner"
-                class="h-full bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-500 ease-in-out w-0">
+    <!-- Attack Simulation Control Panel Component -->
+    <div class="border border-gray-200 rounded-lg shadow-md p-6 mb-8 max-w-full bg-white">
+        <!-- Input Fields Row -->
+        <div class="flex flex-wrap gap-6 mb-6 text-gray-700">
+            <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
+                <i class="fas fa-bolt text-red-500"></i>
+                <label for="attackType" class="font-semibold">Attack:</label>
+                <select id="attackType" class="border rounded-lg px-3 py-2 flex-grow focus:ring-2 focus:ring-red-600">
+                    <option value="UDP_Flood">DNS Flood (UDP)</option>
+                    <option value="SYN_Flood">SYN Flood (TCP)</option>
+                    <option value="HTTP_Flood">HTTP Flood (TCP)</option>
+                </select>
             </div>
-            <span id="progressPercentage" class="absolute inset-y-0 top-auto left-20 text-xs font-bold text-white">0%</span>
+            <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
+                <i class="fas fa-network-wired text-purple-500"></i>
+                <label for="targetSystem" class="font-semibold">Target:</label>
+                <input type="text" id="targetSystem"
+                    class="border rounded-lg px-3 py-2 flex-grow focus:ring-2 focus:ring-purple-600"
+                    placeholder="e.g., 192.168.1.1">
+            </div>
+            <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
+                <i class="fas fa-clock text-blue-500"></i>
+                <label for="attackDuration" class="font-semibold">Duration (s):</label>
+                <input type="number" id="attackDuration"
+                    class="border rounded-lg px-3 py-2 flex-grow focus:ring-2 focus:ring-blue-600" value="60" min="1"
+                    max="300">
+            </div>
+            <div class="flex items-center space-x-2 w-full md:w-1/2 lg:w-1/4">
+                <i class="fas fa-tachometer-alt text-green-500"></i>
+                <label for="attackIntensity" class="font-semibold">Intensity:</label>
+                <input type="range" id="attackIntensity" class="w-full flex-grow" value="50" min="1" max="100">
+                <span id="attackIntensityValue" class="text-gray-600">50</span>
+            </div>
+        </div>
+
+        <!-- Control Buttons Row -->
+        <div class="flex flex-wrap gap-4 mt-6 justify-center">
+            <button id="startAttackButton"
+                class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 md:w-auto">
+                Start Attack
+            </button>
+            <button id="stopAttackButton"
+                class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition duration-200 hidden md:w-auto">
+                Stop Attack
+            </button>
         </div>
     </div>
 
-    <!-- Simulation Status & Timestamp Section -->
-    <div class="text-sm mb-4 flex flex-col sm:flex-row sm:justify-between text-gray-700">
-        <p><strong>Status:</strong> <span id="attackStatus" class="font-semibold text-red-500">Idle</span></p>
-        <p><strong>Started at:</strong> <span id="attackStartTime" class="text-gray-500">N/A</span></p>
+    <!-- Progress and Logs Component -->
+    <div class="border border-gray-300 p-6 rounded-lg shadow-lg text-gray-800 mb-8 w-full bg-white max-h-72">
+        <div class="mb-6">
+            <label for="progressBar" class="font-semibold text-gray-800">Simulation Progress:</label>
+            <div class="relative mt-3 bg-gray-200 rounded-full overflow-hidden h-6">
+                <div id="progressBarInner"
+                    class="h-full bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-500 ease-in-out w-0">
+                </div>
+                <span id="progressPercentage" class="absolute inset-y-0 left-3 text-xs font-bold text-white">0%</span>
+            </div>
+        </div>
+
+        <div class="text-sm mb-4 flex flex-col sm:flex-row sm:justify-between text-gray-700">
+            <p><strong>Status:</strong> <span id="attackStatus" class="font-semibold text-red-500">Idle</span></p>
+            <p><strong>Started at:</strong> <span id="attackStartTime" class="text-gray-500">N/A</span></p>
+        </div>
+
+        <!-- Logs Section -->
+        <div class="overflow-y-auto border-t border-gray-200 pt-4 pr-2 custom-scrollbar max-h-32">
+            <h3 class="font-bold text-gray-800 mb-3">Simulation Status & Logs</h3>
+            <ul id="attackLogs" class="space-y-3 text-xs text-gray-700">
+                <!-- Dynamic log entries will be appended here -->
+            </ul>
+        </div>
     </div>
 
-    <!-- Logs Section with Enhanced Styling and Responsiveness -->
-    <div class="overflow-hidden border-t border-gray-200 pt-2 pb-6">
-        <h3 class="font-bold text-gray-800 mb-2">Simulation Status & Logs</h3>
-        <ul id="attackLogs" class="space-y-2 overflow-y-auto pb-3 max-h-24 text-xs text-gray-700 pr-2 custom-scrollbar">
-            <!-- Example Log Entry -->
-            <li class="flex items-start space-x-2">
-                <span class="text-green-500 font-semibold">[INFO]</span>
-                <span class="text-gray-600">Log entry message goes here...</span>
-            </li>
-            <!-- Dynamic log entries will be appended here -->
-        </ul>
+    <!-- Traffic Chart Component -->
+    <div id="trafficChart" class="bg-white p-6 rounded-lg shadow-lg mb-8 w-full">
+        <canvas id="realTimeChart" class="shadow-lg rounded-md"></canvas>
     </div>
 </div>
-
-<!-- Traffic Chart Component -->
-<div id="trafficChart" class="mb-8">
-    <canvas id="realTimeChart" class="shadow-lg rounded-md p-2"></canvas>
-</div>
-
 {% endblock %}
 
 {% block script_area %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Attack Intensity Slider
     const attackIntensitySlider = document.getElementById('attackIntensity');
     const attackIntensityValue = document.getElementById('attackIntensityValue');
-    attackIntensitySlider.addEventListener('input', function () {
+    attackIntensitySlider.addEventListener('input', () => {
         attackIntensityValue.textContent = attackIntensitySlider.value;
     });
 
-    // Progress Bar
     const progressBarInner = document.getElementById('progressBarInner');
     const progressPercentage = document.getElementById('progressPercentage');
     let progress = 0;
@@ -115,55 +105,46 @@
         progressPercentage.textContent = `${value}%`;
     }
 
-    // Start Attack Functionality
     const startAttackButton = document.getElementById('startAttackButton');
     const stopAttackButton = document.getElementById('stopAttackButton');
-    const pauseAttackButton = document.getElementById('pauseAttackButton');
-    const resumeAttackButton = document.getElementById('resumeAttackButton');
-
     let attackStatus = 'Idle';
     let attackStartTime = null;
     let simulationInterval = null;
 
-    startAttackButton.addEventListener('click', function () {
+    startAttackButton.addEventListener('click', () => {
         attackStatus = 'Running';
         attackStartTime = new Date().toLocaleString();
         document.getElementById('attackStatus').textContent = attackStatus;
         document.getElementById('attackStartTime').textContent = attackStartTime;
-        document.getElementById('attackLogs').innerHTML += `<li>Attack started at ${attackStartTime}</li>`;
+        document.getElementById('attackLogs').innerHTML += `<li>[INFO] Attack started at ${attackStartTime}</li>`;
         stopAttackButton.classList.remove('hidden');
-        pauseAttackButton.classList.remove('hidden');
         startAttackButton.disabled = true;
-
-        // Start progress bar
         progress = 0;
-        simulationInterval = setInterval(function () {
+        simulationInterval = setInterval(() => {
             if (progress < 100) {
-                progress += 2; // Increment by 2%
+                progress += 2;
                 updateProgress(progress);
             } else {
                 clearInterval(simulationInterval);
                 attackStatus = 'Finished';
                 document.getElementById('attackStatus').textContent = attackStatus;
-                document.getElementById('attackLogs').innerHTML += `<li>Attack finished.</li>`;
+                document.getElementById('attackLogs').innerHTML += `<li>[INFO] Attack finished.</li>`;
                 startAttackButton.disabled = false;
             }
         }, 100);
     });
 
-    // Stop Attack Functionality
-    stopAttackButton.addEventListener('click', function () {
+    stopAttackButton.addEventListener('click', () => {
         attackStatus = 'Stopped';
         document.getElementById('attackStatus').textContent = attackStatus;
-        document.getElementById('attackLogs').innerHTML += `<li>Attack stopped.</li>`;
+        document.getElementById('attackLogs').innerHTML += `<li>[INFO] Attack stopped.</li>`;
         stopAttackButton.classList.add('hidden');
         startAttackButton.disabled = false;
         clearInterval(simulationInterval);
     });
 
-    // Traffic Chart
     const ctx = document.getElementById('realTimeChart').getContext('2d');
-    const trafficChart = new Chart(ctx, {
+    new Chart(ctx, {
         type: 'line',
         data: {
             labels: [],
@@ -173,7 +154,7 @@
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 2,
                 fill: false,
-                tension: 0.1
+                tension: 0.3
             }]
         },
         options: {

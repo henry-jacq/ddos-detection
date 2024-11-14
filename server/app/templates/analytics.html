@@ -75,50 +75,70 @@
 {% block script_area %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script> <!-- Date adapter for time scale -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
 <script>
     const socket = io('http://localhost:5001');
 
+    function saveToLocalStorage(key, data) {
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function loadFromLocalStorage(key, defaultValue = []) {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : defaultValue;
+    }
+
+    function updateChartData(chart, dataKey, data, labelsKey, labels) {
+        chart.data.datasets[0].data = data;
+        chart.data.labels = labels;
+        chart.update();
+        saveToLocalStorage(dataKey, data);
+        saveToLocalStorage(labelsKey, labels);
+    }
+
     socket.on('packets_per_sec', function (data) {
-        let packet_count = document.getElementById('packet-count');
-        let pps = data.packets_per_sec_avg.toFixed(2);
-        if (packet_count.innerText !== pps) {
-            packet_count.innerText = pps;
+        let packetCount = document.getElementById('packet-count');
+        packetCount.innerText = data.packets_per_sec_avg.toFixed(2);
+
+        const currentTime = Date.now();
+        requestData.labels.push(currentTime);
+        requestData.datasets[0].data.push(data.packets_per_sec_avg);
+
+        if (requestData.labels.length > 16) {
+            requestData.labels.shift();
+            requestData.datasets[0].data.shift();
         }
+
     });
 
     socket.on('prediction', function (data) {
-        let prediction_output = document.getElementById('ml-prediction-output');
-        let attack_status = document.getElementById('attack-status');
+        let predictionOutput = document.getElementById('ml-prediction-output');
+        let attackStatus = document.getElementById('attack-status');
 
-        if (prediction_output.innerText !== data.attack_type) {
-            prediction_output.innerText = data.attack_type;
-            if (data.attack_type !== 'BENIGN') {
-                attack_status.innerText = 'Under Attack';
-                attack_status.classList.add('text-red-500');
-                attack_status.classList.remove('text-green-500');
-            } else {
-                attack_status.innerText = 'Normal';
-                attack_status.classList.add('text-green-500');
-                attack_status.classList.remove('text-red-500');
-            }
-            console.log("Updating prediction output to: " + data.attack_type);
+        predictionOutput.innerText = data.attack_type;
+        if (data.attack_type !== 'BENIGN') {
+            attackStatus.innerText = 'Under Attack';
+            attackStatus.classList.add('text-red-500');
+            attackStatus.classList.remove('text-green-500');
+        } else {
+            attackStatus.innerText = 'Normal';
+            attackStatus.classList.add('text-green-500');
+            attackStatus.classList.remove('text-red-500');
         }
     });
 
-    const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
-
     const requestData = {
-        labels: [],
+        labels: loadFromLocalStorage('requestLabels', []),
         datasets: [{
             label: 'Avg Packet Flow (packets/sec)',
-            data: [],
+            data: loadFromLocalStorage('requestData', []),
             borderColor: '#4F46E5',
             fill: false
         }]
     };
 
+    const requestGraphCtx = document.getElementById('requestGraph').getContext('2d');
     const requestGraph = new Chart(requestGraphCtx, {
         type: 'line',
         data: requestData,
@@ -126,236 +146,62 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'second'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Time (seconds)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Packets per Second'
-                    },
-                    ticks: {
-                        stepSize: 20
-                    }
-                }
+                x: { type: 'time', time: { unit: 'second' } },
+                y: { beginAtZero: true, title: { text: 'Packets per Second' } }
             }
         }
     });
 
-    socket.on('packets_per_sec', function (data) {
-        const pps = parseFloat(data.packets_per_sec_avg.toFixed(2));
-        const currentTime = Date.now();
-
-        requestData.labels.push(currentTime);
-        requestData.datasets[0].data.push(pps);
-
-        if (requestData.labels.length > 16) {
-            requestData.labels.shift();
-            requestData.datasets[0].data.shift();
-        }
-
-        requestGraph.update();
-    });
-
-    // Initialize protocol count object to keep track of protocol occurrences
-    let protocolCount = {
-        TCP: 0,
-        UDP: 0
-    };
-
-    // Update the protocol pie chart with incoming data
+    let protocolCount = loadFromLocalStorage('protocolCount', { TCP: 0, UDP: 0 });
     socket.on('protocol', function (data) {
-        // console.log("Protocol data received:", data);
-
-        // If the data has a valid protocol, increment the corresponding counter
         if (data && data.protocol) {
-            const protocol = data.protocol.toUpperCase(); // Ensure it's uppercase
-            if (protocolCount[protocol] !== undefined) {
-                protocolCount[protocol] += 1; // Increment the count for the received protocol
-            } else {
-                console.warn(`Unknown protocol received: ${protocol}`);
-            }
+            const protocol = data.protocol.toUpperCase();
+            protocolCount[protocol] = (protocolCount[protocol] || 0) + 1;
         }
-
-        // Log the updated protocol count for debugging
-        // console.log("Updated protocol count:", protocolCount);
-
-        // Prepare data for the pie chart
-        const protocolLabels = Object.keys(protocolCount);
-        const protocolValues = Object.values(protocolCount);
-
-        // Update the pie chart with new data
-        protocolChart.data.labels = protocolLabels;
-        protocolChart.data.datasets[0].data = protocolValues;
-        protocolChart.update();
+        updateChartData(protocolChart, 'protocolData', Object.values(protocolCount), 'protocolLabels', Object.keys(protocolCount));
     });
 
-    // Pie chart for protocol traffic breakdown
     const protocolChartCtx = document.getElementById('protocolChart').getContext('2d');
     const protocolChart = new Chart(protocolChartCtx, {
         type: 'pie',
         data: {
-            labels: ['TCP', 'UDP'], // Initial labels for protocols
+            labels: loadFromLocalStorage('protocolLabels', ['TCP', 'UDP']),
             datasets: [{
-                data: [0, 0],  // Initialize with zero values
+                data: loadFromLocalStorage('protocolData', [0, 0]),
                 backgroundColor: ['#1D4ED8', '#A5B4FC']
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'left',
-                    labels: {
-                        font: {
-                            size: 15
-                        }
-                    }
-                }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-
-    // Store attack IPs and their counts
-    let ipCounts = {};
-
-    // Function to update IP counts
-    function updateIpCounts(ip) {
-        if (ipCounts[ip]) {
-            ipCounts[ip]++;
-        } else {
-            ipCounts[ip] = 1;
-        }
-    }
-
-    // Function to update the chart with the 4 most influential IPs
-    function updateChart() {
-        // Sort the IPs by count (descending order)
-        const sortedIps = Object.entries(ipCounts)
-            .sort((a, b) => b[1] - a[1])  // Sort by count
-            .slice(0, 4);  // Take the top 4 IPs
-
-        // Get the top 4 IPs and their counts
-        const labels = sortedIps.map(item => item[0]);
-        const data = sortedIps.map(item => item[1]);
-
-        // Update the chart with new data
-        sourceIpChart.data.labels = labels;
-        sourceIpChart.data.datasets[0].data = data;
-        sourceIpChart.update();
-    }
-
-    // Socket event listener for attack IP
+    let ipCounts = loadFromLocalStorage('ipCounts', {});
     socket.on('attack_ip', function (data) {
-        // Update the IP counts with the new attack IP
-        updateIpCounts(data.attack_ip);
-
-        // Update the chart with the latest data
-        updateChart();
+        const ip = data.attack_ip;
+        ipCounts[ip] = (ipCounts[ip] || 0) + 1;
+        const sortedIps = Object.entries(ipCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        updateChartData(sourceIpChart, 'ipData', sortedIps.map(item => item[1]), 'ipLabels', sortedIps.map(item => item[0]));
     });
 
-    // Doughnut chart for IP address distribution in attacks
     const sourceIpChartCtx = document.getElementById('sourceIpChart').getContext('2d');
     const sourceIpChart = new Chart(sourceIpChartCtx, {
         type: 'doughnut',
-        data: {
-            labels: ['192.168.1.5', '172.16.0.3', '203.0.113.8', '198.51.100.12'],
-            datasets: [{
-                data: [0, 0, 0, 0],
-                backgroundColor: ['#6366F1', '#4B5563', '#9CA3AF', '#D1D5DB']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'left',
-                    labels: {
-                        font: {
-                            size: 15
-                        }
-                    }
-                }
-            }
-        }
+        data: { labels: loadFromLocalStorage('ipLabels', []), datasets: [{ data: loadFromLocalStorage('ipData', [0, 0, 0, 0]), backgroundColor: ['#6366F1', '#4B5563', '#9CA3AF', '#D1D5DB'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // Store attack ports and their counts
-    let portCounts = {};
-
-    // Function to update port counts
-    function updatePortCounts(port) {
-        if (portCounts[port]) {
-            portCounts[port]++;
-        } else {
-            portCounts[port] = 1;
-        }
-    }
-
-    // Function to update the chart with the most frequent ports
-    function updatePortChart() {
-        // Sort the ports by count (descending order)
-        const sortedPorts = Object.entries(portCounts)
-            .sort((a, b) => b[1] - a[1])  // Sort by count
-            .slice(0, 4);  // Take the top 4 ports
-
-        // Get the top 4 ports and their counts
-        const labels = sortedPorts.map(item => item[0]);
-        const data = sortedPorts.map(item => item[1]);
-
-        // Update the chart with new data
-        portChart.data.labels = labels;
-        portChart.data.datasets[0].data = data;
-        portChart.update();
-    }
-
-    // Socket event listener for attack port
+    let portCounts = loadFromLocalStorage('portCounts', {});
     socket.on('attack_port', function (data) {
-        console.log("Attack Port data received:", data);
-
-        // Update the port counts with the new attack port
-        updatePortCounts(data.attack_port);
-
-        // Update the chart with the latest data
-        updatePortChart();
+        const port = data.attack_port;
+        portCounts[port] = (portCounts[port] || 0) + 1;
+        const sortedPorts = Object.entries(portCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        updateChartData(portChart, 'portData', sortedPorts.map(item => item[1]), 'portLabels', sortedPorts.map(item => item[0]));
     });
 
-    // Bar chart for attack frequency by port
     const portChartCtx = document.getElementById('portChart').getContext('2d');
     const portChart = new Chart(portChartCtx, {
         type: 'bar',
-        data: {
-            labels: ['80', '443', '22', '8080', '53'], // Initial labels for common ports
-            datasets: [{
-                label: 'Port Attack Frequency',
-                data: [0, 0, 0, 0, 0],  // Initial data
-                backgroundColor: '#4F46E5'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Number of Attacks' }
-                }
-            }
-        }
+        data: { labels: loadFromLocalStorage('portLabels', []), datasets: [{ label: 'Port Attack Frequency', data: loadFromLocalStorage('portData', [0, 0, 0, 0]), backgroundColor: '#4F46E5' }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
     });
-
 </script>
-
-
 {% endblock %}
